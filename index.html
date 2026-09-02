@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeskOS — Your command centre</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="personal.css" />
+    <link rel="stylesheet" href="functionality.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="index.html" aria-label="DeskOS overview"><span class="brand-mark">d</span><span>desk<span class="brand-light">os</span></span></a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a class="nav-item active" href="index.html"><span class="nav-icon">⌘</span>Overview</a>
+          <a class="nav-item" href="hub.html?view=tasks"><span class="nav-icon">✓</span>My tasks <span class="nav-count">4</span></a>
+          <a class="nav-item" href="hub.html?view=calendar"><span class="nav-icon">□</span>Calendar</a>
+          <a class="nav-item" href="hub.html?view=notes"><span class="nav-icon">✦</span>Notes</a>
+          <a class="nav-item" href="hub.html?view=files"><span class="nav-icon">▱</span>Files</a>
+        </nav>
+
+        <div class="nav-label">Pinned</div>
+        <nav class="secondary-nav">
+          <a class="nav-item" href="hub.html?view=product"><span class="dot coral"></span><span data-pin-name="product">Product launch</span></a>
+          <a class="nav-item" href="hub.html?view=personal"><span class="dot yellow"></span><span data-pin-name="personal">Personal</span></a>
+          <a class="nav-item" href="hub.html?view=reading"><span class="dot purple"></span><span data-pin-name="reading">Reading list</span></a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a class="help-button" href="hub.html?view=help"><span>?</span> Help &amp; shortcuts <kbd>?</kbd></a>
+          <div class="profile">
+            <div class="avatar" data-user-initials>AM</div>
+            <div><strong data-user-full-name>Alex Morgan</strong><span>Focus mode on</span></div>
+            <a class="more" href="hub.html?view=profile" aria-label="Account options">•••</a>
+          </div>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <a class="date-chip" href="hub.html?view=calendar"><span class="calendar-icon">▦</span><span id="todayDate">Tuesday, 16 July</span><span class="chevron">⌄</span></a>
+          <div class="top-actions"><span class="live-clock" id="liveClock"></span>
+            <a class="icon-button search-button" href="hub.html?view=search" aria-label="Search">⌕ <span class="shortcut">⌘ K</span></a>
+            <a class="icon-button notification" href="hub.html?view=notifications" aria-label="Notifications">♢<i></i></a>
+            <a class="new-button" href="hub.html?view=new"><span>+</span> New</a>
+          </div>
+        </header>
+
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">YOUR SPACE</p>
+            <h1>Good morning, <span data-user-name>Alex</span> <span class="wave">✦</span></h1>
+            <p class="subhead">Here’s your day at a glance. Make it count.</p>
+          </div>
+          <div class="daily-orbit"><span class="orbit-ring"></span><span class="orbit-label">DAY<br /><b>198</b></span></div>
+        </div>
+
+        <section class="dashboard-grid">
+          <article class="card focus-card">
+            <div class="card-topline"><span class="section-title">FOCUS SESSION</span><a class="subtle-button" href="hub.html?view=focus">◌</a></div>
+            <div class="timer-block">
+              <div class="timer-progress"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="progress" id="timerCircle" cx="60" cy="60" r="52"/></svg><div><span id="timerDisplay">24:32</span><small id="timerMode">FOCUS</small></div></div>
+              <div class="timer-info"><p><b id="timerLabel">One thing at a time.</b><span>Deep work is the goal.</span></p><button class="play" id="timerButton" aria-label="Start timer">▶</button></div>
+            </div>
+            <div class="timer-footer"><span><i></i> 1 of 4 sessions today</span><button id="resetTimer">Reset</button></div>
+          </article>
+
+          <article class="card calendar-card">
+            <div class="card-header"><div><span class="section-title">CALENDAR</span><h2 id="calendarTitle">July</h2></div><a class="icon-button mini" href="hub.html?view=calendar">⌘</a></div>
+            <div class="calendar-week"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+            <div class="calendar-days" id="calendarDays"></div>
+            <a class="calendar-event" id="calendarEvent" href="hub.html?view=calendar"><span class="event-time">10:30</span><span class="event-dot"></span><div><b>Design sync</b><small>Google Meet · 30 mins</small></div><span class="event-more">•••</span></a>
+          </article>
+
+          <article class="card task-card">
+            <div class="card-header"><div><span class="section-title">UP NEXT</span><h2>Today’s tasks <span class="task-total" id="taskTotal">2/5</span></h2></div><button class="icon-button mini" id="addTask" aria-label="Add task">+</button></div>
+            <div class="task-list" id="taskList">
+              <label class="task complete"><input type="checkbox" checked /><span class="fake-check"></span><span>Review homepage copy</span><em>10:00</em></label>
+              <label class="task"><input type="checkbox" /><span class="fake-check"></span><span>Send investor update</span><em>11:30</em></label>
+              <label class="task"><input type="checkbox" /><span class="fake-check"></span><span>Prepare workshop deck</span><em>14:00</em></label>
+              <label class="task"><input type="checkbox" /><span class="fake-check"></span><span>Walk &amp; reset</span><em class="personal-tag">Personal</em></label>
+            </div>
+            <a class="view-all" href="hub.html?view=tasks">View all tasks <span>→</span></a>
+          </article>
+
+          <article class="card notes-card">
+            <div class="card-header"><div><span class="section-title">QUICK NOTE</span><h2>Thoughts, captured.</h2></div><div class="note-pulse">SAVED</div></div>
+            <textarea id="quickNote" aria-label="Quick note" placeholder="Start writing something...">Remember to turn user feedback from yesterday's session into three clear action items.</textarea>
+            <div class="note-footer"><span>⌘ ↵ to save</span><div><button>⌗</button><button>⌘</button><button>☺</button></div></div>
+          </article>
+
+          <article class="card music-card">
+            <div class="music-visual"><div class="vinyl"><div class="vinyl-lines"></div><div class="vinyl-label">after<br />hours</div></div><div class="music-shimmer"></div></div>
+            <div class="now-playing"><div><span class="section-title">NOW PLAYING</span><h2>Golden</h2><p>Jill Scott · <a href="https://open.spotify.com/search/Jill%20Scott%20Golden" target="_blank" rel="noreferrer">Open in Spotify ↗</a></p></div><button class="heart" id="heartButton">♡</button></div>
+            <div class="music-controls"><button>↶</button><button class="music-play" id="musicButton">▶</button><button>↷</button><div class="music-track"><i id="musicProgress"></i></div><span>2:18</span></div>
+          </article>
+
+          <article class="card weather-card">
+            <div class="weather-header"><div><span class="section-title">LOCAL WEATHER</span><h2><span data-user-location id="weatherCity">Sydney</span> <a class="location" href="hub.html?view=weather">⌖</a></h2></div><span class="weather-time" id="weatherTime">LIVE</span></div>
+            <div class="weather-main"><div class="sun-icon"><span></span></div><div class="temperature" id="weatherTemp">—<span>°</span></div><div class="weather-description"><b id="weatherDescription">Loading weather…</b><span id="weatherFeels">Checking local conditions</span></div></div>
+            <div class="weather-stats"><span><b id="weatherWind">—</b>Wind</span><span><b id="weatherHumidity">—</b>Humidity</span><span><b id="weatherUv">Live</b>Conditions</span></div>
+          </article>
+
+          <article class="card activity-card">
+            <div class="card-header"><div><span class="section-title">DIGITAL WELLBEING</span><h2>DeskOS time</h2></div><a class="text-action" href="hub.html?view=wellbeing">Today</a></div>
+            <div class="activity-content"><div class="bars" aria-label="DeskOS active time"><div><i style="height:42%"></i><span>M</span></div><div><i style="height:68%"></i><span>T</span></div><div><i style="height:50%"></i><span>W</span></div><div><i class="current" style="height:86%"></i><span>T</span></div><div><i style="height:57%"></i><span>F</span></div><div><i style="height:36%"></i><span>S</span></div><div><i style="height:30%"></i><span>S</span></div></div><div class="screen-stat"><strong id="screenTimeValue">0<sup>h</sup> 00<sup>m</sup></strong><span>in DeskOS today</span><em>● <small>active while open</small></em></div></div>
+          </article>
+
+          <article class="card quick-card">
+            <div class="card-header"><div><span class="section-title">QUICK LAUNCH</span><h2>Your everyday tools</h2></div><a class="icon-button mini" href="hub.html?view=apps">•••</a></div>
+            <div class="app-grid">
+              <a class="app-tile" href="hub.html?view=app&app=Figma"><span class="app-icon figma">F</span><b>Figma</b></a>
+              <a class="app-tile" href="hub.html?view=app&app=Notion"><span class="app-icon notion">N</span><b>Notion</b></a>
+              <a class="app-tile" href="hub.html?view=app&app=Slack"><span class="app-icon slack">S</span><b>Slack</b></a>
+              <a class="app-tile" href="hub.html?view=app&app=Mail"><span class="app-icon mail">✉</span><b>Mail</b></a>
+              <a class="app-tile" href="hub.html?view=app&app=Drive"><span class="app-icon drive">△</span><b>Drive</b></a>
+              <a class="app-tile add-app" href="hub.html?view=apps"><span>+</span><b>Add app</b></a>
+            </div>
+          </article>
+
+          <article class="card files-card">
+            <div class="card-header"><div><span class="section-title">RECENTLY OPENED</span><h2>Keep moving</h2></div><a class="text-action" href="hub.html?view=files">All files →</a></div>
+            <div class="file-list" id="fileList">
+              <a class="file-row" href="hub.html?view=file&name=Q3%20Product%20Roadmap"><span class="file-icon pink">▱</span><span><b>Q3 Product Roadmap</b><small>Edited 12 min ago · Figma</small></span><em>↗</em></a>
+              <a class="file-row" href="hub.html?view=file&name=Research%20synthesis"><span class="file-icon blue">▤</span><span><b>Research synthesis</b><small>Edited yesterday · Notion</small></span><em>↗</em></a>
+              <a class="file-row" href="hub.html?view=file&name=Workshop%20inspiration"><span class="file-icon yellow">▣</span><span><b>Workshop inspiration</b><small>Edited Mon · FigJam</small></span><em>↗</em></a>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

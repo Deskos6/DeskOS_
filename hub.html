@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeskOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="personal.css" />
+    <link rel="stylesheet" href="functionality.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="index.html" aria-label="DeskOS overview"><span class="brand-mark">d</span><span>desk<span class="brand-light">os</span></span></a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+          <a class="nav-item" href="index.html"><span class="nav-icon">⌘</span>Overview</a>
+          <a class="nav-item" data-nav="tasks" href="hub.html?view=tasks"><span class="nav-icon">✓</span>My tasks <span class="nav-count">3</span></a>
+          <a class="nav-item" data-nav="calendar" href="hub.html?view=calendar"><span class="nav-icon">□</span>Calendar</a>
+          <a class="nav-item" data-nav="notes" href="hub.html?view=notes"><span class="nav-icon">✦</span>Notes</a>
+          <a class="nav-item" data-nav="files" href="hub.html?view=files"><span class="nav-icon">▱</span>Files</a>
+        </nav>
+        <div class="nav-label">Pinned</div>
+        <nav class="secondary-nav">
+          <a class="nav-item" data-nav="product" href="hub.html?view=product"><span class="dot coral"></span><span data-pin-name="product">Product launch</span></a>
+          <a class="nav-item" data-nav="personal" href="hub.html?view=personal"><span class="dot yellow"></span><span data-pin-name="personal">Personal</span></a>
+          <a class="nav-item" data-nav="reading" href="hub.html?view=reading"><span class="dot purple"></span><span data-pin-name="reading">Reading list</span></a>
+        </nav>
+        <div class="sidebar-bottom">
+          <a class="help-button" href="hub.html?view=help"><span>?</span> Help &amp; shortcuts <kbd>?</kbd></a>
+          <div class="profile"><div class="avatar" data-user-initials>AM</div><div><strong data-user-full-name>Alex Morgan</strong><span>Focus mode on</span></div><a class="more" href="hub.html?view=profile">•••</a></div>
+        </div>
+      </aside>
+      <section class="workspace hub-workspace">
+        <header class="topbar">
+          <a class="date-chip" href="hub.html?view=calendar"><span class="calendar-icon">▦</span>Tuesday, 16 July <span class="chevron">⌄</span></a>
+          <div class="top-actions"><span class="live-clock" id="liveClock"></span><a class="icon-button search-button" href="hub.html?view=search">⌕ <span class="shortcut">⌘ K</span></a><a class="icon-button notification" href="hub.html?view=notifications">♢<i></i></a><a class="new-button" href="hub.html?view=new"><span>+</span> New</a></div>
+        </header>
+        <div id="hubContent" class="hub-content"></div>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="data.js"></script>
+    <script src="hub.js"></script>
+  </body>
+</html>

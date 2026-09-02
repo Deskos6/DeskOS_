@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to DeskOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="personal.css" />
+  </head>
+  <body class="login-body">
+    <main class="login-shell">
+      <section class="login-panel">
+        <a class="brand login-brand" href="login.html"><span class="brand-mark">d</span><span>desk<span class="brand-light">os</span></span></a>
+        <div class="welcome-copy"><p class="eyebrow">SET UP YOUR SPACE</p><h1>Make it feel<br />like yours.</h1><p>A personal command centre, shaped around your attention.</p></div>
+        <form id="profileForm" class="profile-form">
+          <label>What should we call you?<input id="nameInput" name="name" autocomplete="name" placeholder="Alex" maxlength="24" required /></label>
+          <label>Where are you based?<input id="locationInput" name="location" autocomplete="address-level2" placeholder="Sydney" maxlength="32" /></label>
+          <fieldset><legend>Choose your desk colour</legend><div class="theme-choices"><label class="theme-choice selected"><input type="radio" name="theme" value="lime" checked /><i></i><span>Fresh lime</span></label><label class="theme-choice"><input type="radio" name="theme" value="lavender" /><i></i><span>Soft lilac</span></label><label class="theme-choice"><input type="radio" name="theme" value="peach" /><i></i><span>Warm peach</span></label><label class="theme-choice"><input type="radio" name="theme" value="sky" /><i></i><span>Clear blue</span></label></div></fieldset>
+          <button class="new-button continue-button" type="submit">Continue to DeskOS <span>→</span></button>
+        </form>
+        <p class="local-note">Your choices stay on this device.</p>
+      </section>
+      <section class="login-art" aria-hidden="true"><div class="art-glow"></div><div class="art-card art-card-back"><span>MON</span><b>17</b></div><div class="art-card art-card-main"><div><span class="section-title">TODAY</span><h2>One calm<br />thing at a time.</h2></div><div class="art-progress"><i></i></div><small>FOCUS MODE</small></div><div class="art-orb one"></div><div class="art-orb two"></div></section>
+    </main>
+    <script src="login.js"></script>
+  </body>
+</html>
