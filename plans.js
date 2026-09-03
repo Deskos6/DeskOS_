@@ -1,12 +1,79 @@
 (() => {
+  // Developer-only plan preview system.
+  // Real subscriptions/payments can be connected later.
   const PLAN_KEY = 'deskos-plan-v1';
+
   const plans = {
-    free: { name: 'Free', price: '$0', badge: 'STARTER', color: 'free', tagline: 'Get organised.', features: ['Tasks & calendar', 'Notes & files', 'Spotify', 'Basic focus sessions', 'Basic digital wellbeing', '1 workspace'] },
-    plus: { name: 'Plus', price: '$4.99 AUD/mo', badge: 'POPULAR', color: 'plus', tagline: 'Make DeskOS yours.', features: ['Everything in Free', 'Cloud sync', 'Custom themes', 'Advanced wellbeing', 'Multiple focus sessions', 'Unlimited pins', 'More widgets', '2 workspaces'] },
-    pro: { name: 'Pro', price: '$9.99 AUD/mo', badge: 'POWER USER', color: 'pro', tagline: 'Make DeskOS work with your computer.', features: ['Everything in Plus', 'System activity tracking', 'Real recent files/apps', 'AI productivity assistant', 'Automations', 'Advanced analytics', 'Global search', '5 workspaces'] },
-    ultimate: { name: 'Ultimate', price: '$14.99 AUD/mo', badge: 'FULL ACCESS', color: 'ultimate', tagline: 'Make DeskOS work for you.', features: ['Everything in Pro', 'Advanced AI automation', 'Workflow learning', 'Unlimited workspaces', 'Unlimited widgets', 'Custom shortcuts', 'Advanced backup', 'Early access'] }
+    free: {
+      name: 'Free',
+      price: '$0',
+      badge: 'STARTER',
+      color: 'free',
+      tagline: 'Get organised.',
+      features: [
+        'Tasks & calendar',
+        'Notes & files',
+        'Spotify & weather',
+        'Basic focus mode',
+        'Basic reminders',
+        '2 workspaces',
+        '500 MB storage'
+      ]
+    },
+    plus: {
+      name: 'Plus',
+      price: '$4.99 AUD/mo',
+      badge: 'POPULAR',
+      color: 'plus',
+      tagline: 'Make DeskOS yours.',
+      features: [
+        'Everything in Free',
+        'Unlimited workspaces',
+        'Custom themes & workspace colours',
+        'Recurring tasks & subtasks',
+        'Advanced reminders',
+        'Productivity statistics',
+        'Custom dashboard widgets',
+        '5 GB storage'
+      ]
+    },
+    pro: {
+      name: 'Pro',
+      price: '$9.99 AUD/mo',
+      badge: 'POWER USER',
+      color: 'pro',
+      tagline: 'Make DeskOS work for you.',
+      features: [
+        'Everything in Plus',
+        'AI productivity assistant',
+        'AI note summaries & planning',
+        'Global search',
+        'Automations',
+        'Computer activity tracking',
+        'Advanced analytics & reports',
+        '50 GB storage'
+      ]
+    },
+    team: {
+      name: 'Team',
+      price: '$14.99 AUD/user/mo',
+      badge: 'TEAMS',
+      color: 'team',
+      tagline: 'Organise everyone together.',
+      features: [
+        'Everything in Pro',
+        'Shared workspaces',
+        'Invite team members',
+        'Assign tasks to people',
+        'Shared calendars & notes',
+        'Shared files & comments',
+        'Team dashboard & activity',
+        'School/class workspaces'
+      ]
+    }
   };
-  const rank = { free: 0, plus: 1, pro: 2, ultimate: 3 };
+
+  const rank = { free: 0, plus: 1, pro: 2, team: 3 };
 
   const getPlan = () => {
     const saved = localStorage.getItem(PLAN_KEY);
@@ -15,14 +82,21 @@
 
   const applyPlan = (plan) => {
     if (!plans[plan]) return;
+
     localStorage.setItem(PLAN_KEY, plan);
     document.documentElement.dataset.plan = plan;
 
-    // Make the selected preview immediately visible throughout DeskOS.
-    document.querySelectorAll('[data-plan-name]').forEach(el => { el.textContent = plans[plan].name; });
-    document.querySelectorAll('[data-plan-tagline]').forEach(el => { el.textContent = plans[plan].tagline; });
+    document.querySelectorAll('[data-plan-name]').forEach(el => {
+      el.textContent = plans[plan].name;
+    });
+    document.querySelectorAll('[data-plan-tagline]').forEach(el => {
+      el.textContent = plans[plan].tagline;
+    });
 
-    window.dispatchEvent(new CustomEvent('deskos:planchange', { detail: { id: plan, ...plans[plan] } }));
+    window.dispatchEvent(new CustomEvent('deskos:planchange', {
+      detail: { id: plan, ...plans[plan] }
+    }));
+
     render();
 
     const toast = document.querySelector('#toast');
@@ -49,7 +123,7 @@
     const modal = document.createElement('div');
     modal.className = 'plan-modal';
     modal.hidden = true;
-    modal.innerHTML = `<div class="plan-backdrop" data-plan-close></div><section class="plan-panel" role="dialog" aria-modal="true" aria-labelledby="planTitle"><button class="plan-close" data-plan-close aria-label="Close">×</button><div class="plan-heading"><span class="section-title">DESKOS PLANS</span><h2 id="planTitle">Choose how far you want to take DeskOS.</h2><p>Choose any plan to preview its features on this build. <b>No payment is required.</b></p></div><div class="plan-grid" id="planGrid"></div><div class="plan-note"><b>Developer preview:</b> your selected plan is saved to this browser. Selecting a plan now changes DeskOS into that plan's preview mode; billing can be connected later.</div></section>`;
+    modal.innerHTML = `<div class="plan-backdrop" data-plan-close></div><section class="plan-panel" role="dialog" aria-modal="true" aria-labelledby="planTitle"><button class="plan-close" data-plan-close aria-label="Close">×</button><div class="plan-heading"><span class="section-title">DESKOS PLANS</span><h2 id="planTitle">Choose your DeskOS plan.</h2><p>Developer preview only. Select any plan to test its feature level. <b>No payment is required.</b></p></div><div class="plan-grid" id="planGrid"></div><div class="plan-note"><b>Developer testing:</b> your selected plan is saved to this browser. This only changes the app's preview plan. Real subscriptions and billing will be added later.</div></section>`;
     document.body.appendChild(modal);
 
     launcher.addEventListener('click', () => {
@@ -64,6 +138,7 @@
         document.body.classList.remove('plans-open');
         return;
       }
+
       const button = event.target.closest('[data-select-plan]');
       if (button) applyPlan(button.dataset.selectPlan);
     });
