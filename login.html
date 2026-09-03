@@ -9,22 +9,41 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="personal.css" />
+    <style>
+      .auth-heading{margin:0 0 6px;font:800 24px/1.15 Manrope,sans-serif;letter-spacing:-.04em}
+      .auth-switch{margin:14px 0 0;background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:600 12px Manrope,sans-serif}
+      .auth-status{margin:12px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:500 12px/1.45 Manrope,sans-serif}
+      .auth-status.error{border-color:#b84a3b}
+      .profile-form label[hidden],.profile-form fieldset[hidden]{display:none}
+      .continue-button:disabled{opacity:.6;cursor:wait}
+    </style>
   </head>
   <body class="login-body">
     <main class="login-shell">
       <section class="login-panel">
         <a class="brand login-brand" href="login.html"><span class="brand-mark">d</span><span>desk<span class="brand-light">os</span></span></a>
-        <div class="welcome-copy"><p class="eyebrow">SET UP YOUR SPACE</p><h1>Make it feel<br />like yours.</h1><p>A personal command centre, shaped around your attention.</p></div>
+        <div class="welcome-copy">
+          <p class="eyebrow">SET UP YOUR SPACE</p>
+          <h1>Make it feel<br />like yours.</h1>
+          <p>A personal command centre, shaped around your attention.</p>
+        </div>
+        <h2 class="auth-heading" id="authHeading">Create your DeskOS account</h2>
         <form id="profileForm" class="profile-form">
-          <label>What should we call you?<input id="nameInput" name="name" autocomplete="name" placeholder="Alex" maxlength="24" required /></label>
-          <label>Where are you based?<input id="locationInput" name="location" autocomplete="address-level2" placeholder="Sydney" maxlength="32" /></label>
-          <fieldset><legend>Choose your desk colour</legend><div class="theme-choices"><label class="theme-choice selected"><input type="radio" name="theme" value="lime" checked /><i></i><span>Fresh lime</span></label><label class="theme-choice"><input type="radio" name="theme" value="lavender" /><i></i><span>Soft lilac</span></label><label class="theme-choice"><input type="radio" name="theme" value="peach" /><i></i><span>Warm peach</span></label><label class="theme-choice"><input type="radio" name="theme" value="sky" /><i></i><span>Clear blue</span></label></div></fieldset>
-          <button class="new-button continue-button" type="submit">Continue to DeskOS <span>→</span></button>
+          <label>Email address<input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" required /></label>
+          <label>Password<input id="passwordInput" name="password" type="password" autocomplete="new-password" placeholder="At least 6 characters" minlength="6" required /></label>
+          <label id="nameField">What should we call you?<input id="nameInput" name="name" autocomplete="name" placeholder="Alex" maxlength="24" required /></label>
+          <label id="locationField">Where are you based?<input id="locationInput" name="location" autocomplete="address-level2" placeholder="Sydney" maxlength="32" /></label>
+          <fieldset id="themeField"><legend>Choose your desk colour</legend><div class="theme-choices"><label class="theme-choice selected"><input type="radio" name="theme" value="lime" checked /><i></i><span>Fresh lime</span></label><label class="theme-choice"><input type="radio" name="theme" value="lavender" /><i></i><span>Soft lilac</span></label><label class="theme-choice"><input type="radio" name="theme" value="peach" /><i></i><span>Warm peach</span></label><label class="theme-choice"><input type="radio" name="theme" value="sky" /><i></i><span>Clear blue</span></label></div></fieldset>
+          <button class="new-button continue-button" type="submit">Create account <span>→</span></button>
+          <button class="auth-switch" id="authModeButton" type="button">Already have an account? Log in</button>
+          <p class="auth-status" id="authStatus" hidden></p>
         </form>
-        <p class="local-note">Your choices stay on this device.</p>
+        <p class="local-note">Your account is securely stored online with Supabase.</p>
       </section>
       <section class="login-art" aria-hidden="true"><div class="art-glow"></div><div class="art-card art-card-back"><span>MON</span><b>17</b></div><div class="art-card art-card-main"><div><span class="section-title">TODAY</span><h2>One calm<br />thing at a time.</h2></div><div class="art-progress"><i></i></div><small>FOCUS MODE</small></div><div class="art-orb one"></div><div class="art-orb two"></div></section>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
     <script src="login.js"></script>
   </body>
 </html>
