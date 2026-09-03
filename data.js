@@ -48,8 +48,14 @@
     save,
     relativeTime,
     incompleteTasks: () => state.tasks.filter(task => !task.complete),
-    addTask(title, due = 'Today') { const task = { id: makeId('task'), title, due, complete: false }; state.tasks.push(task); save(); window.DeskOSCloud?.syncTask?.(task); },
-    updateTask(id, patch) { const task = state.tasks.find(item => item.id === id); if (task) { Object.assign(task, patch); save(); window.DeskOSCloud?.syncTask?.(task); } },
+    addTask(title, due = 'Today') {
+      const task = { id: makeId('task'), title, due, complete: false, createdAt: new Date().toISOString() };
+      state.tasks.push(task); save(); window.DeskOSCloud?.syncTask?.(task);
+    },
+    updateTask(id, patch) {
+      const task = state.tasks.find(item => item.id === id);
+      if (task) { Object.assign(task, patch); save(); window.DeskOSCloud?.syncTask?.(task); }
+    },
     deleteTask(id) { state.tasks = state.tasks.filter(item => item.id !== id); save(); window.DeskOSCloud?.deleteTask?.(id); },
     addNote(title = 'Untitled note', content = '') { const note = { id: makeId('note'), title, content, updatedAt: Date.now() }; state.notes.unshift(note); save(); return note; },
     updateNote(id, patch) { const note = state.notes.find(item => item.id === id); if (note) { Object.assign(note, patch, { updatedAt: Date.now() }); save(); } },
@@ -65,9 +71,7 @@
         if (state.activity.day && state.activity.seconds > 0) state.activity.history[state.activity.day] = state.activity.seconds;
         state.activity = { day: today, seconds: 0, history: state.activity.history || {} };
       }
-      state.activity.seconds += seconds;
-      state.activity.history[today] = state.activity.seconds;
-      save();
+      state.activity.seconds += seconds; state.activity.history[today] = state.activity.seconds; save();
     },
     activityForDate(date) { if (date === state.activity.day) return state.activity.seconds || 0; return state.activity.history?.[date] || 0; },
     activityHistory(days = 7) {
@@ -88,27 +92,72 @@
     script.onerror = () => reject(new Error('Could not load Supabase.')); document.head.appendChild(script);
   });
   const cloudReady = loadSupabase().catch(error => { console.warn('DeskOS cloud sync unavailable:', error); return null; });
-  const cloudUser = async () => { const client = await cloudReady; if (!client) return null; const { data } = await client.auth.getUser(); return data?.user || null; };
+  const cloudUser = async () => { const client = await cloudReady; if (!client) return null; const { data, error } = await client.auth.getUser(); if (error) console.warn('Could not read Supabase user:', error.message); return data?.user || null; };
+
   const syncTask = async (task) => {
-    const client = await cloudReady; const user = await cloudUser(); if (!client || !user || !task) return;
-    const { error } = await client.from('tasks').upsert({ user_id: user.id, local_id: task.id, title: task.title || '', description: task.description || '', completed: !!task.complete, due_date: task.due || null, created_at: task.createdAt || new Date().toISOString() }, { onConflict: 'user_id,local_id' });
-    if (error) console.warn('Could not sync task:', error.message);
+    const client = await cloudReady; const user = await cloudUser();
+    if (!client || !user || !task) return;
+    // Supabase due_date is a DATE, while DeskOS tasks can use times such as "10:00" or labels such as "Personal".
+    // Only send a value when it is actually a YYYY-MM-DD date.
+    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due || '') ? task.due : null;
+    const payload = {
+      user_id: user.id,
+      local_id: task.id,
+      title: task.title || '',
+      description: task.description || '',
+      completed: !!task.complete,
+      due_date: dueDate,
+      created_at: task.createdAt || new Date().toISOString()
+    };
+    const { error } = await client.from('tasks').upsert(payload, { onConflict: 'user_id,local_id' });
+    if (error) console.warn('Could not sync task:', error.message, payload);
   };
+
   const deleteCloudTask = async (id) => {
     const client = await cloudReady; const user = await cloudUser(); if (!client || !user) return;
     const { error } = await client.from('tasks').delete().eq('user_id', user.id).eq('local_id', id);
-    if (error) console.warn('Could not delete cloud task:', error.message);
+    if (error) console.warn('Could not delete task:', error.message);
   };
+
   const loadCloudTasks = async () => {
     const client = await cloudReady; const user = await cloudUser(); if (!client || !user) return;
     const { data, error } = await client.from('tasks').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
     if (error) { console.warn('Could not load cloud tasks:', error.message); return; }
-    if (!data) return;
-    state.tasks = data.map(task => ({ id: task.local_id || task.id, title: task.title || '', description: task.description || '', complete: !!task.completed, due: task.due_date || 'Today', createdAt: task.created_at }));
+
+    const localTasks = Array.isArray(state.tasks) ? [...state.tasks] : [];
+    const cloudTasks = Array.isArray(data) ? data : [];
+
+    // Never wipe local tasks just because a new account has an empty cloud table.
+    if (cloudTasks.length === 0 && localTasks.length > 0) {
+      await syncAllTasks();
+      window.dispatchEvent(new CustomEvent('deskos:cloudtasksloaded'));
+      return;
+    }
+
+    // Merge by local_id. Cloud wins for matching tasks; local-only tasks are uploaded.
+    const cloudById = new Map(cloudTasks.map(task => [task.local_id || task.id, task]));
+    const merged = cloudTasks.map(task => ({
+      id: task.local_id || task.id,
+      title: task.title || '',
+      description: task.description || '',
+      complete: !!task.completed,
+      due: task.due_date || 'Today',
+      createdAt: task.created_at
+    }));
+    const localOnly = localTasks.filter(task => !cloudById.has(task.id));
+    for (const task of localOnly) { merged.push(task); await syncTask(task); }
+    merged.sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    state.tasks = merged;
     save();
     window.dispatchEvent(new CustomEvent('deskos:cloudtasksloaded'));
   };
+
   const syncAllTasks = async () => { for (const task of state.tasks || []) await syncTask(task); };
   window.DeskOSCloud = { ready: cloudReady, user: cloudUser, syncTask, syncTasks: syncAllTasks, loadTasks: loadCloudTasks, deleteTask: deleteCloudTask };
-  cloudReady.then(client => { if (!client) return; client.auth.onAuthStateChange((event, session) => { if (session?.user) loadCloudTasks(); }); setTimeout(loadCloudTasks, 300); });
+
+  cloudReady.then(client => {
+    if (!client) return;
+    client.auth.onAuthStateChange((event, session) => { if (session?.user) loadCloudTasks(); });
+    setTimeout(loadCloudTasks, 500);
+  });
 })();
