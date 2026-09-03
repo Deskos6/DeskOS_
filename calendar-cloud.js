@@ -45,8 +45,13 @@
   const originalDeleteEvent = state.deleteEvent;
 
   state.addEvent = (title, date, time = 'All day', detail = 'DeskOS event', colour = 'purple') => {
-    const event = originalAddEvent(title, date, time, detail, colour);
-    if (event) syncEvent(event);
+    originalAddEvent(title, date, time, detail);
+    const event = state.state.events[state.state.events.length - 1];
+    if (!event) return null;
+    event.colour = colour;
+    event.createdAt = event.createdAt || new Date().toISOString();
+    state.save();
+    syncEvent(event);
     return event;
   };
 
@@ -70,8 +75,7 @@
     const localEvents = Array.isArray(state.state.events) ? [...state.state.events] : [];
     const cloudEvents = Array.isArray(data) ? data : [];
 
-    // If this account has never synced calendar events, push the existing local
-    // calendar into the cloud so the first login does not lose the demo data.
+    // First sync: keep the existing local calendar by uploading it.
     if (cloudEvents.length === 0 && localEvents.length > 0) {
       for (const event of localEvents) await syncEvent(event);
       window.dispatchEvent(new CustomEvent('deskos:cloudeventsloaded'));
