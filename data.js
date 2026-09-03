@@ -20,23 +20,26 @@
       reading: { title: 'Reading list', description: 'A few good ideas, waiting for your attention.', colour: 'purple' }
     },
     events: [{ id: 'event-sync', title: 'Design sync', time: '10:30', date: todayKey(), detail: 'Google Meet · 30 mins', colour: 'coral' }],
-    activity: { day: todayKey(), seconds: 0, history: {} }
+    activity: { day: todayKey(), seconds: 0, history: {} },
+    deletedTaskIds: []
   };
-  const clone = (value) => JSON.parse(JSON.stringify(value));
+  const clone = value => JSON.parse(JSON.stringify(value));
   const load = () => {
     try {
       const saved = JSON.parse(localStorage.getItem(key) || '{}');
       const merged = { ...clone(defaults), ...saved };
       merged.activity = { ...clone(defaults.activity), ...(saved.activity || {}) };
       merged.activity.history = { ...(saved.activity?.history || {}) };
+      merged.deletedTaskIds = Array.isArray(saved.deletedTaskIds) ? saved.deletedTaskIds : [];
       if (merged.activity.day && merged.activity.seconds > 0 && !merged.activity.history[merged.activity.day]) merged.activity.history[merged.activity.day] = merged.activity.seconds;
+      merged.tasks = (merged.tasks || []).filter(task => !merged.deletedTaskIds.includes(task.id));
       return merged;
     } catch { return clone(defaults); }
   };
   let state = load();
   const save = () => { localStorage.setItem(key, JSON.stringify(state)); window.dispatchEvent(new CustomEvent('deskos:update')); };
-  const makeId = (kind) => `${kind}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const relativeTime = (timestamp) => {
+  const makeId = kind => `${kind}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const relativeTime = timestamp => {
     const delta = Math.max(0, Date.now() - timestamp);
     if (delta < 60000) return 'Just now';
     if (delta < 3600000) return `${Math.floor(delta / 60000)} min ago`;
@@ -50,13 +53,19 @@
     incompleteTasks: () => state.tasks.filter(task => !task.complete),
     addTask(title, due = 'Today') {
       const task = { id: makeId('task'), title, due, complete: false, createdAt: new Date().toISOString() };
-      state.tasks.push(task); save(); window.DeskOSCloud?.syncTask?.(task);
+      state.deletedTaskIds = state.deletedTaskIds.filter(id => id !== task.id);
+      state.tasks.push(task); save(); return window.DeskOSCloud?.syncTask?.(task);
     },
     updateTask(id, patch) {
       const task = state.tasks.find(item => item.id === id);
-      if (task) { Object.assign(task, patch); save(); window.DeskOSCloud?.syncTask?.(task); }
+      if (task) { Object.assign(task, patch); save(); return window.DeskOSCloud?.syncTask?.(task); }
     },
-    deleteTask(id) { state.tasks = state.tasks.filter(item => item.id !== id); save(); window.DeskOSCloud?.deleteTask?.(id); },
+    deleteTask(id) {
+      if (!state.deletedTaskIds.includes(id)) state.deletedTaskIds.push(id);
+      state.tasks = state.tasks.filter(item => item.id !== id);
+      save();
+      return window.DeskOSCloud?.deleteTask?.(id);
+    },
     addNote(title = 'Untitled note', content = '') { const note = { id: makeId('note'), title, content, updatedAt: Date.now() }; state.notes.unshift(note); save(); return note; },
     updateNote(id, patch) { const note = state.notes.find(item => item.id === id); if (note) { Object.assign(note, patch, { updatedAt: Date.now() }); save(); } },
     deleteNote(id) { state.notes = state.notes.filter(item => item.id !== id); save(); },
@@ -94,57 +103,37 @@
   const cloudReady = loadSupabase().catch(error => { console.warn('DeskOS cloud sync unavailable:', error); return null; });
   const cloudUser = async () => { const client = await cloudReady; if (!client) return null; const { data, error } = await client.auth.getUser(); if (error) console.warn('Could not read Supabase user:', error.message); return data?.user || null; };
 
-  const syncTask = async (task) => {
+  const syncTask = async task => {
     const client = await cloudReady; const user = await cloudUser();
-    if (!client || !user || !task) return;
-    // Supabase due_date is a DATE, while DeskOS tasks can use times such as "10:00" or labels such as "Personal".
-    // Only send a value when it is actually a YYYY-MM-DD date.
+    if (!client || !user || !task || state.deletedTaskIds.includes(task.id)) return false;
     const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due || '') ? task.due : null;
-    const payload = {
-      user_id: user.id,
-      local_id: task.id,
-      title: task.title || '',
-      description: task.description || '',
-      completed: !!task.complete,
-      due_date: dueDate,
-      created_at: task.createdAt || new Date().toISOString()
-    };
+    const payload = { user_id: user.id, local_id: task.id, title: task.title || '', description: task.description || '', completed: !!task.complete, due_date: dueDate, created_at: task.createdAt || new Date().toISOString() };
     const { error } = await client.from('tasks').upsert(payload, { onConflict: 'user_id,local_id' });
-    if (error) console.warn('Could not sync task:', error.message, payload);
+    if (error) { console.warn('Could not sync task:', error.message, payload); return false; }
+    return true;
   };
 
-  const deleteCloudTask = async (id) => {
-    const client = await cloudReady; const user = await cloudUser(); if (!client || !user) return;
+  const deleteCloudTask = async id => {
+    const client = await cloudReady; const user = await cloudUser(); if (!client || !user) return false;
     const { error } = await client.from('tasks').delete().eq('user_id', user.id).eq('local_id', id);
-    if (error) console.warn('Could not delete task:', error.message);
+    if (error) { console.warn('Could not delete task:', error.message); return false; }
+    return true;
   };
 
   const loadCloudTasks = async () => {
     const client = await cloudReady; const user = await cloudUser(); if (!client || !user) return;
     const { data, error } = await client.from('tasks').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
     if (error) { console.warn('Could not load cloud tasks:', error.message); return; }
-
     const localTasks = Array.isArray(state.tasks) ? [...state.tasks] : [];
-    const cloudTasks = Array.isArray(data) ? data : [];
-
-    // Never wipe local tasks just because a new account has an empty cloud table.
+    const cloudTasks = (Array.isArray(data) ? data : []).filter(task => !state.deletedTaskIds.includes(task.local_id || task.id));
     if (cloudTasks.length === 0 && localTasks.length > 0) {
       await syncAllTasks();
       window.dispatchEvent(new CustomEvent('deskos:cloudtasksloaded'));
       return;
     }
-
-    // Merge by local_id. Cloud wins for matching tasks; local-only tasks are uploaded.
     const cloudById = new Map(cloudTasks.map(task => [task.local_id || task.id, task]));
-    const merged = cloudTasks.map(task => ({
-      id: task.local_id || task.id,
-      title: task.title || '',
-      description: task.description || '',
-      complete: !!task.completed,
-      due: task.due_date || 'Today',
-      createdAt: task.created_at
-    }));
-    const localOnly = localTasks.filter(task => !cloudById.has(task.id));
+    const merged = cloudTasks.map(task => ({ id: task.local_id || task.id, title: task.title || '', description: task.description || '', complete: !!task.completed, due: task.due_date || 'Today', createdAt: task.created_at }));
+    const localOnly = localTasks.filter(task => !cloudById.has(task.id) && !state.deletedTaskIds.includes(task.id));
     for (const task of localOnly) { merged.push(task); await syncTask(task); }
     merged.sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
     state.tasks = merged;
@@ -152,9 +141,8 @@
     window.dispatchEvent(new CustomEvent('deskos:cloudtasksloaded'));
   };
 
-  const syncAllTasks = async () => { for (const task of state.tasks || []) await syncTask(task); };
+  const syncAllTasks = async () => { for (const task of state.tasks || []) if (!state.deletedTaskIds.includes(task.id)) await syncTask(task); };
   window.DeskOSCloud = { ready: cloudReady, user: cloudUser, syncTask, syncTasks: syncAllTasks, loadTasks: loadCloudTasks, deleteTask: deleteCloudTask };
-
   cloudReady.then(client => {
     if (!client) return;
     client.auth.onAuthStateChange((event, session) => { if (session?.user) loadCloudTasks(); });
