@@ -18,7 +18,7 @@ if (!profile) {
   const updateClock = () => { const now = new Date(); $('#todayDate').textContent = formatDate(now); $('#liveClock').textContent = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(now); };
   updateClock(); setInterval(updateClock, 60000);
 
-  const renderPins = () => Object.entries(state.state.pins).forEach(([key, pin]) => { document.querySelector(`[data-pin-name="${key}"]`).textContent = pin.title; });
+  const renderPins = () => Object.entries(state.state.pins).forEach(([key, pin]) => { const el = document.querySelector(`[data-pin-name="${key}"]`); if (el) el.textContent = pin.title; });
   const renderTaskBadge = () => { const remaining = state.incompleteTasks().length; document.querySelectorAll('.nav-count').forEach(el => el.textContent = remaining ? remaining : ''); $('#taskTotal').textContent = remaining ? `${remaining} remaining` : ''; };
   const renderTasks = () => {
     $('#taskList').innerHTML = state.state.tasks.slice(0, 4).map(task => `<label class="task ${task.complete ? 'complete' : ''}"><input type="checkbox" data-task-id="${task.id}" ${task.complete ? 'checked' : ''}/><span class="fake-check"></span><span>${task.title}</span><em class="${task.due === 'Personal' ? 'personal-tag' : ''}">${task.due}</em></label>`).join('');
@@ -30,6 +30,21 @@ if (!profile) {
   };
   const renderNote = () => { const note = state.state.notes[0]; $('#quickNote').value = note ? note.content : ''; };
   const renderScreenTime = () => { const [hours, minutes] = state.activityLabel().split(' '); $('#screenTimeValue').innerHTML = `${hours}<sup>h</sup> ${minutes.replace('m', '')}<sup>m</sup>`; };
+  const renderWellbeingBars = () => {
+    const bars = document.querySelectorAll('.activity-card .bars > div');
+    if (!bars.length) return;
+    const history = state.activityHistory(7);
+    const maxSeconds = 8 * 60 * 60;
+    bars.forEach((bar, index) => {
+      const seconds = history[index]?.seconds || 0;
+      const fill = bar.querySelector('i');
+      const dayLabel = bar.querySelector('span');
+      if (!fill) return;
+      fill.style.height = seconds > 0 ? `${Math.max(2, Math.min(100, (seconds / maxSeconds) * 100))}%` : '0%';
+      fill.classList.toggle('current', index === 6);
+      if (dayLabel) dayLabel.textContent = new Date(`${history[index]?.date || new Date().toISOString().slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' });
+    });
+  };
   const renderCalendar = () => {
     const now = new Date(); const year = now.getFullYear(); const month = now.getMonth();
     $('#calendarTitle').textContent = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(now);
@@ -64,7 +79,7 @@ if (!profile) {
   let noteTimer; $('#quickNote').addEventListener('input', event => { const note = state.state.notes[0] || state.addNote('Quick note'); $('.note-pulse').textContent = 'SAVING'; clearTimeout(noteTimer); noteTimer = setTimeout(() => { state.updateNote(note.id, { content: event.target.value }); $('.note-pulse').textContent = 'SAVED'; }, 350); });
   let musicPlaying = false; $('#musicButton').addEventListener('click', () => { musicPlaying = !musicPlaying; $('#musicButton').textContent = musicPlaying ? 'Ⅱ' : '▶'; $('#musicProgress').style.width = musicPlaying ? '74%' : '68%'; showToast(musicPlaying ? 'Open Spotify to play the full track' : 'Music preview paused'); });
   $('#heartButton').addEventListener('click', event => { const liked = event.currentTarget.textContent === '♡'; event.currentTarget.textContent = liked ? '♥' : '♡'; event.currentTarget.style.color = liked ? '#d88088' : ''; showToast(liked ? 'Added to favourites' : 'Removed from favourites'); });
-  let activeTick; const startActiveTimer = () => { clearInterval(activeTick); activeTick = setInterval(() => { if (!document.hidden) state.addActiveTime(60); }, 60000); }; startActiveTimer();
-  window.addEventListener('deskos:update', () => { renderTaskBadge(); renderFiles(); renderNote(); renderPins(); renderScreenTime(); renderCalendar(); });
-  renderPins(); renderTasks(); renderFiles(); renderNote(); renderScreenTime(); renderCalendar(); renderTimer(); loadWeather();
+  let activeTick; const startActiveTimer = () => { clearInterval(activeTick); activeTick = setInterval(() => { if (!document.hidden) { state.addActiveTime(60); renderScreenTime(); renderWellbeingBars(); } }, 60000); }; startActiveTimer();
+  window.addEventListener('deskos:update', () => { renderTaskBadge(); renderFiles(); renderNote(); renderPins(); renderScreenTime(); renderWellbeingBars(); renderCalendar(); });
+  renderPins(); renderTasks(); renderFiles(); renderNote(); renderScreenTime(); renderWellbeingBars(); renderCalendar(); renderTimer(); loadWeather();
 }
