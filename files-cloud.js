@@ -97,8 +97,7 @@
     }
   };
 
-  // Delegated change handler: the Files view is rendered dynamically by hub.js,
-  // so the input may not exist when this script first runs.
+  // Delegated change handler: the Files view is rendered dynamically by hub.js.
   document.addEventListener('change', event => {
     const input = event.target.closest?.('#localFileInput');
     if (input) uploadFiles(input);
