@@ -49,14 +49,15 @@
       deleteNote.addEventListener('click', async event => {
         event.preventDefault();
         event.stopImmediatePropagation();
-        const notes = window.DeskOS?.state?.notes || [];
-        const active = notes[0];
+        const activeItem = document.querySelector('.note-item.active');
+        const id = activeItem?.dataset.noteId;
+        const active = (window.DeskOS?.state?.notes || []).find(note => note.id === id);
         if (!active || !window.confirm(`Delete “${active.title}”?`)) return;
         deleteNote.disabled = true;
         window.DeskOS.deleteNote(active.id);
         const ok = await window.DeskOSCloud?.deleteNote?.(active.id);
         if (!ok) {
-          alert('The note was removed from DeskOS, but Supabase could not delete it. Check your Supabase DELETE policy.');
+          alert('The note was removed from DeskOS, but Supabase could not delete it. Check that the notes table and DELETE policy are set up.');
           deleteNote.disabled = false;
           return;
         }
