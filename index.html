@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="personal.css" />
     <link rel="stylesheet" href="functionality.css" />
+    <link rel="stylesheet" href="spotify.css" />
   </head>
   <body>
     <main class="shell">
@@ -95,8 +96,9 @@
 
           <article class="card music-card">
             <div class="music-visual"><div class="vinyl"><div class="vinyl-lines"></div><div class="vinyl-label">after<br />hours</div></div><div class="music-shimmer"></div></div>
-            <div class="now-playing"><div><span class="section-title">NOW PLAYING</span><h2>Golden</h2><p>Jill Scott · <a href="https://open.spotify.com/search/Jill%20Scott%20Golden" target="_blank" rel="noreferrer">Open in Spotify ↗</a></p></div><button class="heart" id="heartButton">♡</button></div>
-            <div class="music-controls"><button>↶</button><button class="music-play" id="musicButton">▶</button><button>↷</button><div class="music-track"><i id="musicProgress"></i></div><span>2:18</span></div>
+            <div class="now-playing"><div><span class="section-title">NOW PLAYING</span><h2 id="spotifyTrackName">Connect Spotify</h2><p id="spotifyArtistName">Link your Spotify account to show what you're listening to. · <a id="spotifyOpenLink" href="https://open.spotify.com" target="_blank" rel="noreferrer">Open Spotify ↗</a></p></div><button class="heart" id="heartButton" aria-label="Save track">♡</button></div>
+            <div class="spotify-actions"><button class="spotify-connect" id="spotifyConnectButton">Connect Spotify</button><button class="spotify-disconnect" id="spotifyDisconnectButton" hidden>Disconnect</button><span id="spotifyStatus">Not connected</span></div>
+            <div class="music-controls"><button id="spotifyPreviousButton" aria-label="Previous track">↶</button><button class="music-play" id="musicButton" aria-label="Play or pause">▶</button><button id="spotifyNextButton" aria-label="Next track">↷</button><div class="music-track"><i id="musicProgress"></i></div><span id="musicTime">—</span></div>
           </article>
 
           <article class="card weather-card">
@@ -136,5 +138,6 @@
     <div class="toast" id="toast" role="status"></div>
     <script src="data.js"></script>
     <script src="app.js"></script>
+    <script src="spotify.js"></script>
   </body>
 </html>
