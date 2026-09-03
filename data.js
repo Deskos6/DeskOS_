@@ -1,5 +1,6 @@
 (() => {
   const key = 'deskos-data-v2';
+  const todayKey = () => new Date().toISOString().slice(0, 10);
   const defaults = {
     tasks: [
       { id: 'task-homepage', title: 'Review homepage copy', due: '10:00', complete: true },
@@ -18,13 +19,21 @@
       personal: { title: 'Personal', description: 'The things that keep the rest of life moving.', colour: 'yellow' },
       reading: { title: 'Reading list', description: 'A few good ideas, waiting for your attention.', colour: 'purple' }
     },
-    events: [{ id: 'event-sync', title: 'Design sync', time: '10:30', date: new Date().toISOString().slice(0, 10), detail: 'Google Meet · 30 mins', colour: 'coral' }],
-    activity: { day: new Date().toDateString(), seconds: 0 }
+    events: [{ id: 'event-sync', title: 'Design sync', time: '10:30', date: todayKey(), detail: 'Google Meet · 30 mins', colour: 'coral' }],
+    activity: { day: todayKey(), seconds: 0, history: {} }
   };
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const load = () => {
-    try { return { ...clone(defaults), ...JSON.parse(localStorage.getItem(key) || '{}') }; }
-    catch { return clone(defaults); }
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || '{}');
+      const merged = { ...clone(defaults), ...saved };
+      merged.activity = { ...clone(defaults.activity), ...(saved.activity || {}) };
+      merged.activity.history = { ...(saved.activity?.history || {}) };
+      if (merged.activity.day && merged.activity.seconds > 0 && !merged.activity.history[merged.activity.day]) {
+        merged.activity.history[merged.activity.day] = merged.activity.seconds;
+      }
+      return merged;
+    } catch { return clone(defaults); }
   };
   let state = load();
   const save = () => { localStorage.setItem(key, JSON.stringify(state)); window.dispatchEvent(new CustomEvent('deskos:update')); };
@@ -52,8 +61,36 @@
     updatePin(id, patch) { if (state.pins[id]) { Object.assign(state.pins[id], patch); save(); } },
     addEvent(title, date, time, detail = 'DeskOS event') { state.events.push({ id: makeId('event'), title, date, time, detail, colour: 'purple' }); save(); },
     deleteEvent(id) { state.events = state.events.filter(event => event.id !== id); save(); },
-    addActiveTime(seconds) { const today = new Date().toDateString(); if (state.activity.day !== today) state.activity = { day: today, seconds: 0 }; state.activity.seconds += seconds; save(); },
-    activityLabel() { const seconds = state.activity.day === new Date().toDateString() ? state.activity.seconds : 0; return `${Math.floor(seconds / 3600)}h ${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}m`; }
+    addActiveTime(seconds) {
+      const today = todayKey();
+      if (state.activity.day !== today) {
+        if (state.activity.day && state.activity.seconds > 0) state.activity.history[state.activity.day] = state.activity.seconds;
+        state.activity = { day: today, seconds: 0, history: state.activity.history || {} };
+      }
+      state.activity.seconds += seconds;
+      state.activity.history[today] = state.activity.seconds;
+      save();
+    },
+    activityForDate(date) {
+      if (date === state.activity.day) return state.activity.seconds || 0;
+      return state.activity.history?.[date] || 0;
+    },
+    activityHistory(days = 7) {
+      const result = [];
+      const base = new Date();
+      base.setHours(12, 0, 0, 0);
+      for (let i = days - 1; i >= 0; i -= 1) {
+        const date = new Date(base);
+        date.setDate(base.getDate() - i);
+        const key = date.toISOString().slice(0, 10);
+        result.push({ date: key, seconds: this.activityForDate(key) });
+      }
+      return result;
+    },
+    activityLabel() {
+      const seconds = this.activityForDate(todayKey());
+      return `${Math.floor(seconds / 3600)}h ${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}m`;
+    }
   };
   window.DeskOS = api;
 })();
