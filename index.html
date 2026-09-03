@@ -7,40 +7,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="personal.css" />
-    <link rel="stylesheet" href="functionality.css" />
-    <link rel="stylesheet" href="spotify.css" />
-    <link rel="stylesheet" href="plans.css" />
-    <link rel="stylesheet" href="features.css?v=2" />
+    <link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="personal.css" /><link rel="stylesheet" href="functionality.css" /><link rel="stylesheet" href="spotify.css" /><link rel="stylesheet" href="plans.css" /><link rel="stylesheet" href="features.css?v=2" />
   </head>
   <body>
     <main class="shell">
       <aside class="sidebar">
         <a class="brand" href="index.html" aria-label="DeskOS overview"><span class="brand-mark">d</span><span>desk<span class="brand-light">os</span></span></a>
-        <nav class="primary-nav" aria-label="Primary navigation">
-          <a class="nav-item active" href="index.html"><span class="nav-icon">⌘</span>Overview</a>
-          <a class="nav-item" href="hub.html?view=tasks"><span class="nav-icon">✓</span>My tasks <span class="nav-count">4</span></a>
-          <a class="nav-item" href="hub.html?view=calendar"><span class="nav-icon">□</span>Calendar</a>
-          <a class="nav-item" href="hub.html?view=notes"><span class="nav-icon">✦</span>Notes</a>
-          <a class="nav-item" href="hub.html?view=files"><span class="nav-icon">▱</span>Files</a>
-        </nav>
-        <div class="nav-label">Pinned</div>
-        <nav class="secondary-nav">
-          <a class="nav-item" href="hub.html?view=product"><span class="dot coral"></span><span data-pin-name="product">Product launch</span></a>
-          <a class="nav-item" href="hub.html?view=personal"><span class="dot yellow"></span><span data-pin-name="personal">Personal</span></a>
-          <a class="nav-item" href="hub.html?view=reading"><span class="dot purple"></span><span data-pin-name="reading">Reading list</span></a>
-        </nav>
-        <div class="sidebar-bottom">
-          <a class="help-button" href="hub.html?view=help"><span>?</span> Help &amp; shortcuts <kbd>?</kbd></a>
-          <div class="profile"><div class="avatar" data-user-initials>AM</div><div><strong data-user-full-name>Alex Morgan</strong><span>Focus mode on</span></div><a class="more" href="hub.html?view=profile">•••</a></div>
-        </div>
+        <nav class="primary-nav" aria-label="Primary navigation"><a class="nav-item active" href="index.html"><span class="nav-icon">⌘</span>Overview</a><a class="nav-item" href="hub.html?view=tasks"><span class="nav-icon">✓</span>My tasks <span class="nav-count">4</span></a><a class="nav-item" href="hub.html?view=calendar"><span class="nav-icon">□</span>Calendar</a><a class="nav-item" href="hub.html?view=notes"><span class="nav-icon">✦</span>Notes</a><a class="nav-item" href="hub.html?view=files"><span class="nav-icon">▱</span>Files</a></nav>
+        <div class="nav-label">Pinned</div><nav class="secondary-nav"><a class="nav-item" href="hub.html?view=product"><span class="dot coral"></span><span data-pin-name="product">Product launch</span></a><a class="nav-item" href="hub.html?view=personal"><span class="dot yellow"></span><span data-pin-name="personal">Personal</span></a><a class="nav-item" href="hub.html?view=reading"><span class="dot purple"></span><span data-pin-name="reading">Reading list</span></a></nav>
+        <div class="sidebar-bottom"><a class="help-button" href="hub.html?view=help"><span>?</span> Help &amp; shortcuts <kbd>?</kbd></a><div class="profile"><div class="avatar" data-user-initials>AM</div><div><strong data-user-full-name>Alex Morgan</strong><span>Focus mode on</span></div><a class="more" href="hub.html?view=profile">•••</a></div></div>
       </aside>
       <section class="workspace">
-        <header class="topbar">
-          <a class="date-chip" href="hub.html?view=calendar"><span class="calendar-icon">▦</span><span id="todayDate">Loading date…</span><span class="chevron">⌄</span></a>
-          <div class="top-actions"><span class="live-clock" id="liveClock"></span><a class="icon-button search-button" href="hub.html?view=search" aria-label="Search">⌕ <span class="shortcut">⌘ K</span></a><a class="icon-button notification" href="hub.html?view=notifications" aria-label="Notifications">♢<i></i></a><a class="new-button" href="hub.html?view=new"><span>+</span> New</a></div>
-        </header>
+        <header class="topbar"><a class="date-chip" href="hub.html?view=calendar"><span class="calendar-icon">▦</span><span id="todayDate">Loading date…</span><span class="chevron">⌄</span></a><div class="top-actions"><span class="live-clock" id="liveClock"></span><a class="icon-button search-button" href="hub.html?view=search" aria-label="Search">⌕ <span class="shortcut">⌘ K</span></a><a class="icon-button notification" href="hub.html?view=notifications" aria-label="Notifications">♢<i></i></a><a class="new-button" href="hub.html?view=new"><span>+</span> New</a></div></header>
         <div class="page-heading"><div><p class="eyebrow">YOUR SPACE</p><h1>Good morning, <span data-user-name>Alex</span> <span class="wave">✦</span></h1><p class="subhead">Here’s your day at a glance. Make it count.</p></div><div class="daily-orbit"><span class="orbit-ring"></span><span class="orbit-label">DAY<br /><b>198</b></span></div></div>
         <section class="dashboard-grid">
           <article class="card focus-card"><div class="card-topline"><span class="section-title">FOCUS SESSION</span><a class="subtle-button" href="hub.html?view=focus">◌</a></div><div class="timer-block"><div class="timer-progress"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="52"/><circle class="progress" id="timerCircle" cx="60" cy="60" r="52"/></svg><div><span id="timerDisplay">24:32</span><small id="timerMode">FOCUS</small></div></div><div class="timer-info"><p><b id="timerLabel">One thing at a time.</b><span>Deep work is the goal.</span></p><button class="play" id="timerButton" aria-label="Start timer">▶</button></div></div><div class="timer-footer"><span><i></i> 1 of 4 sessions today</span><button id="resetTimer">Reset</button></div></article>
@@ -56,6 +34,6 @@
       </section>
     </main>
     <div class="toast" id="toast" role="status"></div>
-    <script src="data.js"></script><script src="calendar-cloud.js"></script><script src="app.js"></script><script src="spotify.js"></script><script src="plans.js"></script><script src="features.js?v=2"></script>
+    <script src="data.js"></script><script src="calendar-cloud.js"></script><script src="profile-cloud.js"></script><script src="app.js"></script><script src="spotify.js"></script><script src="plans.js"></script><script src="features.js?v=2"></script>
   </body>
 </html>
