@@ -35,7 +35,7 @@
       </aside>
       <section class="workspace hub-workspace">
         <header class="topbar">
-          <a class="date-chip" href="hub.html?view=calendar"><span class="calendar-icon">▦</span>Tuesday, 16 July <span class="chevron">⌄</span></a>
+          <a class="date-chip" href="hub.html?view=calendar"><span class="calendar-icon">▦</span><span id="todayDate">Loading date…</span><span class="chevron">⌄</span></a>
           <div class="top-actions"><span class="live-clock" id="liveClock"></span><a class="icon-button search-button" href="hub.html?view=search">⌕ <span class="shortcut">⌘ K</span></a><a class="icon-button notification" href="hub.html?view=notifications">♢<i></i></a><a class="new-button" href="hub.html?view=new"><span>+</span> New</a></div>
         </header>
         <div id="hubContent" class="hub-content"></div>
@@ -44,5 +44,6 @@
     <div class="toast" id="toast" role="status"></div>
     <script src="data.js"></script>
     <script src="hub.js"></script>
+    <script src="calendar-enhancements.js"></script>
   </body>
 </html>
