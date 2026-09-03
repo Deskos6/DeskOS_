@@ -19,114 +19,27 @@ button,textarea { font:inherit; color:inherit; } a { color:inherit; text-decorat
 .files-card{grid-column:span 8}.file-list{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.file-row{display:flex;align-items:center;text-align:left;border:1px solid #f0f0eb;padding:10px;border-radius:8px;gap:9px;transition:.2s}.file-row:hover{border-color:#cad4b8;background:#fafbf7}.file-icon{width:25px;height:28px;border-radius:4px 4px 7px 4px;display:grid;place-items:center;font-size:13px}.pink{background:#f9d7dc;color:#bd6973}.blue{background:#dbeaf9;color:#6693bd}.yellow{background:#f8ebc5;color:#bc9945}.file-row span:nth-child(2){min-width:0;flex:1}.file-row b,.file-row small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-row b{font-size:9px}.file-row small{font-size:8px;color:#9ba098;margin-top:3px}.file-row em{font-style:normal;color:#9ba198;font-size:12px}.toast{position:fixed;bottom:24px;right:25px;background:#283025;color:#eff4e4;padding:11px 15px;border-radius:8px;box-shadow:0 8px 25px #1114;font-size:11px;font-weight:700;transform:translateY(80px);opacity:0;transition:.25s}.toast.show{transform:translateY(0);opacity:1}
 @media(max-width:1200px){.workspace{padding:0 25px 32px}.dashboard-grid{gap:12px}.card{padding:16px}.focus-card{padding:17px}.timer-block{gap:17px}.files-card{grid-column:span 8}.file-list{gap:6px}.file-row{padding:8px}.sidebar{width:215px}}
 
-/* =========================================================
-   DESKOS — FIXED SIDEBAR / SCROLLING CONTENT
-   ========================================================= */
+/* Fixed sidebar + scrolling dashboard */
 
 html,
 body {
   height: 100%;
-  margin: 0;
+}
+
+body {
   overflow: hidden;
 }
 
-.shell {
-  height: 100vh;
-  min-height: 100vh;
-  display: flex;
-  overflow: hidden;
-}
-
-/* SIDEBAR */
 .sidebar {
   position: fixed;
-  left: 0;
   top: 0;
-
-  width: 250px;
+  left: 0;
   height: 100vh;
-
-  box-sizing: border-box;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  z-index: 100;
+  z-index: 1000;
 }
 
-/* MAIN WORKSPACE */
 .workspace {
-  margin-left: 250px;
-
-  width: calc(100% - 250px);
   height: 100vh;
-  min-height: 100vh;
-
-  box-sizing: border-box;
-
   overflow-y: auto;
   overflow-x: hidden;
-}
-
-/* Keep the sidebar scrollbar subtle */
-.sidebar::-webkit-scrollbar,
-.workspace::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar::-webkit-scrollbar-thumb,
-.workspace::-webkit-scrollbar-thumb {
-  border-radius: 10px;
-}
-
-/* =========================================================
-   TABLET
-   ========================================================= */
-
-@media (max-width: 900px) {
-  .sidebar {
-    width: 220px;
-  }
-
-  .workspace {
-    margin-left: 220px;
-    width: calc(100% - 220px);
-  }
-}
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 700px) {
-  html,
-  body {
-    overflow: auto;
-  }
-
-  .shell {
-    height: auto;
-    min-height: 100vh;
-    display: block;
-    overflow: visible;
-  }
-
-  .sidebar {
-    position: relative;
-
-    width: 100%;
-    height: auto;
-
-    overflow: visible;
-  }
-
-  .workspace {
-    margin-left: 0;
-
-    width: 100%;
-    height: auto;
-    min-height: auto;
-
-    overflow: visible;
-  }
 }
