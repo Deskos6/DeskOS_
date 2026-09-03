@@ -19,7 +19,7 @@ if (!profile) {
   updateClock(); setInterval(updateClock, 60000);
 
   const renderPins = () => Object.entries(state.state.pins).forEach(([key, pin]) => { document.querySelector(`[data-pin-name="${key}"]`).textContent = pin.title; });
-  const renderTaskBadge = () => { const remaining = state.incompleteTasks().length; document.querySelectorAll('.nav-count').forEach(el => el.textContent = remaining); $('#taskTotal').textContent = `${remaining} remaining`; };
+  const renderTaskBadge = () => { const remaining = state.incompleteTasks().length; document.querySelectorAll('.nav-count').forEach(el => el.textContent = remaining ? remaining : ''); $('#taskTotal').textContent = remaining ? `${remaining} remaining` : ''; };
   const renderTasks = () => {
     $('#taskList').innerHTML = state.state.tasks.slice(0, 4).map(task => `<label class="task ${task.complete ? 'complete' : ''}"><input type="checkbox" data-task-id="${task.id}" ${task.complete ? 'checked' : ''}/><span class="fake-check"></span><span>${task.title}</span><em class="${task.due === 'Personal' ? 'personal-tag' : ''}">${task.due}</em></label>`).join('');
     renderTaskBadge();
