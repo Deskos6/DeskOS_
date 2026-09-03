@@ -86,6 +86,12 @@
     merged.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     state.state.notes = merged;
     state.save();
+
+    if (new URLSearchParams(window.location.search).get('view') === 'notes' && sessionStorage.getItem('deskos-notes-cloud-refresh') !== 'done') {
+      sessionStorage.setItem('deskos-notes-cloud-refresh', 'done');
+      window.location.reload();
+      return;
+    }
     window.dispatchEvent(new CustomEvent('deskos:cloudnotesloaded'));
   };
 
