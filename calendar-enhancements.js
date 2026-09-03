@@ -40,7 +40,6 @@
   monthDate.setDate(1);
   let selectedDate = toISO(new Date());
 
-  // Replace the old calendar controls with working month navigation.
   previous.disabled = false;
   next.disabled = false;
   previous.type = 'button';
@@ -136,7 +135,7 @@
     const title = window.prompt(`Event for ${dateLabel(selectedDate)}`, 'New event');
     if (!title || !title.trim()) return;
     const time = window.prompt('Time (for example 14:30, or leave blank for all day)', '10:00');
-    state.addEvent(title.trim(), time && time.trim() ? time.trim() : 'All day', selectedDate, 'DeskOS event', 'coral');
+    state.addEvent(title.trim(), selectedDate, time && time.trim() ? time.trim() : 'All day', 'DeskOS event', 'coral');
     renderCalendar();
   });
 
@@ -160,7 +159,6 @@
     }
   });
 
-  // Allow creating a task directly on the selected calendar day.
   const taskButton = document.createElement('button');
   taskButton.type = 'button';
   taskButton.className = 'text-action';
