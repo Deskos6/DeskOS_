@@ -3,10 +3,11 @@
  */
 (() => {
   const SPOTIFY_CLIENT_ID = '00cb1ffb09cf4b5d83ed83fccb572e60';
-  const REDIRECT_URI = `${window.location.origin}${window.location.pathname}`;
-  const TOKEN_KEY = 'deskos-spotify-token-v1';
-  const VERIFIER_KEY = 'deskos-spotify-code-verifier-v1';
-  const STATE_KEY = 'deskos-spotify-oauth-state-v1';
+  // Production GitHub Pages callback. This must exactly match the URI allowlisted in Spotify.
+  const REDIRECT_URI = 'https://deskos6.github.io/DeskOS_/index.html';
+  const TOKEN_KEY = 'deskos-spotify-token-v2';
+  const VERIFIER_KEY = 'deskos-spotify-code-verifier-v2';
+  const STATE_KEY = 'deskos-spotify-oauth-state-v2';
   const SCOPES = [
     'user-read-currently-playing',
     'user-read-playback-state',
@@ -53,8 +54,16 @@
     const token = getToken();
     if (!token?.refresh_token) return false;
     try {
-      const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: token.refresh_token, client_id: SPOTIFY_CLIENT_ID });
-      const response = await fetch('https://accounts.spotify.com/api/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+      const body = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: token.refresh_token,
+        client_id: SPOTIFY_CLIENT_ID
+      });
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
       if (!response.ok) throw new Error('Refresh failed');
       const next = await response.json();
       saveToken({ ...token, ...next, expires_at: Date.now() + next.expires_in * 1000 });
@@ -77,7 +86,13 @@
   const api = async (path, options = {}, retry = true) => {
     const token = getToken();
     if (!token?.access_token) throw new Error('Spotify is not connected.');
-    const response = await fetch(`https://api.spotify.com/v1${path}`, { ...options, headers: { Authorization: `Bearer ${token.access_token}`, ...(options.headers || {}) } });
+    const response = await fetch(`https://api.spotify.com/v1${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token.access_token}`,
+        ...(options.headers || {})
+      }
+    });
     if (response.status === 401 && retry && token.refresh_token) {
       const refreshed = await refreshAccessToken();
       if (refreshed) return api(path, options, false);
@@ -93,7 +108,15 @@
     const state = randomString(32);
     localStorage.setItem(VERIFIER_KEY, verifier);
     localStorage.setItem(STATE_KEY, state);
-    const params = new URLSearchParams({ response_type: 'code', client_id: SPOTIFY_CLIENT_ID, scope: SCOPES, code_challenge_method: 'S256', code_challenge: challenge, redirect_uri: REDIRECT_URI, state });
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: SPOTIFY_CLIENT_ID,
+      scope: SCOPES,
+      code_challenge_method: 'S256',
+      code_challenge: challenge,
+      redirect_uri: REDIRECT_URI,
+      state
+    });
     window.location.href = `https://accounts.spotify.com/authorize?${params}`;
   };
 
@@ -103,13 +126,32 @@
     const state = params.get('state');
     const error = params.get('error');
     if (!code && !error) return;
-    history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-    if (error) { setStatus('Connection cancelled'); return; }
-    if (state !== localStorage.getItem(STATE_KEY)) { setStatus('Connection could not be verified'); return; }
+
+    history.replaceState({}, document.title, REDIRECT_URI);
+    if (error) {
+      setStatus('Connection cancelled');
+      return;
+    }
+    if (state !== localStorage.getItem(STATE_KEY)) {
+      setStatus('Connection could not be verified');
+      return;
+    }
+
     try {
       const verifier = localStorage.getItem(VERIFIER_KEY);
-      const body = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI, client_id: SPOTIFY_CLIENT_ID, code_verifier: verifier });
-      const response = await fetch('https://accounts.spotify.com/api/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+      if (!verifier) throw new Error('Missing PKCE verifier');
+      const body = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: SPOTIFY_CLIENT_ID,
+        code_verifier: verifier
+      });
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
       if (!response.ok) throw new Error('Token exchange failed');
       const token = await response.json();
       saveToken({ ...token, expires_at: Date.now() + token.expires_in * 1000 });
@@ -154,32 +196,60 @@
 
   const loadPlayback = async () => {
     if (!getToken()) return;
-    try { renderPlayback(await api('/me/player')); setStatus('Connected', true); }
-    catch (error) { if (/401|403/.test(error.message)) setStatus('Reconnect required'); }
+    try {
+      renderPlayback(await api('/me/player'));
+      setStatus('Connected', true);
+    } catch (error) {
+      if (/401|403/.test(error.message)) setStatus('Reconnect required');
+    }
   };
 
   const playerAction = async (path) => {
-    try { await api(path, { method: 'PUT' }); setTimeout(loadPlayback, 250); }
-    catch (error) { alert(error.message.includes('403') ? 'Spotify could not control playback. Make sure you have Spotify Premium and an available device.' : error.message); }
+    try {
+      await api(path, { method: 'PUT' });
+      setTimeout(loadPlayback, 250);
+    } catch (error) {
+      alert(error.message.includes('403')
+        ? 'Spotify could not control playback. Make sure you have Spotify Premium and an available device.'
+        : error.message);
+    }
   };
 
   const disconnect = () => {
-    clearToken(); clearTimeout(refreshTimer); clearInterval(playbackTimer); renderDisconnected();
+    clearToken();
+    clearTimeout(refreshTimer);
+    clearInterval(playbackTimer);
+    localStorage.removeItem(VERIFIER_KEY);
+    localStorage.removeItem(STATE_KEY);
+    renderDisconnected();
   };
 
   const init = async () => {
-    if (!window.crypto?.subtle) { setStatus('Secure connection required'); return; }
+    if (!window.crypto?.subtle) {
+      setStatus('Secure connection required');
+      return;
+    }
     await handleCallback();
-    if (!getToken()) { renderDisconnected(); return; }
-    renderConnected(); scheduleRefresh(); await loadPlayback();
-    clearInterval(playbackTimer); playbackTimer = setInterval(loadPlayback, 10000);
+    if (!getToken()) {
+      renderDisconnected();
+      return;
+    }
+    renderConnected();
+    scheduleRefresh();
+    await loadPlayback();
+    clearInterval(playbackTimer);
+    playbackTimer = setInterval(loadPlayback, 10000);
   };
 
   $('spotifyConnectButton')?.addEventListener('click', connect);
   $('spotifyDisconnectButton')?.addEventListener('click', disconnect);
   $('musicButton')?.addEventListener('click', async () => {
-    try { const data = await api('/me/player'); await playerAction(data?.is_playing ? '/me/player/pause' : '/me/player/play'); }
-    catch (error) { alert(error.message); }
+    try {
+      const data = await api('/me/player');
+      await playerAction(data?.is_playing ? '/me/player/pause' : '/me/player/play');
+    } catch (error) {
+      alert(error.message);
+    }
   });
   $('spotifyNextButton')?.addEventListener('click', () => playerAction('/me/player/next'));
   $('spotifyPreviousButton')?.addEventListener('click', () => playerAction('/me/player/previous'));
