@@ -47,3 +47,38 @@
     <script src="login.js"></script>
   </body>
 </html>
+
+<!-- Forgot Password -->
+<div id="forgotPasswordSection" style="display: none;">
+  <h2>Reset your password</h2>
+
+  <p>Enter your email and we'll send you a password reset link.</p>
+
+  <input
+    type="email"
+    id="resetEmail"
+    placeholder="Email address"
+    autocomplete="email"
+  >
+
+  <button id="sendResetButton" onclick="sendPasswordReset()">
+    Send Reset Email
+  </button>
+
+  <p id="resetMessage"></p>
+
+  <button onclick="showLoginForm()">
+    Back to Login
+  </button>
+</div>
+
+<!-- Forgot Password Link -->
+<div id="forgotPasswordLink">
+  <button
+    type="button"
+    onclick="showForgotPassword()"
+    style="background: none; border: none; cursor: pointer;"
+  >
+    Forgot Password?
+  </button>
+</div>
