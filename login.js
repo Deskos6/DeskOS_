@@ -94,3 +94,84 @@ form.addEventListener('submit', async event => {
     submitButton.innerHTML = authMode === 'signup' ? 'Create account <span>→</span>' : 'Log in <span>→</span>';
   }
 });
+// ========================================
+// PASSWORD RESET
+// ========================================
+
+function showForgotPassword() {
+  const loginForm = document.getElementById("loginForm");
+  const forgotSection = document.getElementById("forgotPasswordSection");
+  const forgotLink = document.getElementById("forgotPasswordLink");
+
+  if (loginForm) {
+    loginForm.style.display = "none";
+  }
+
+  if (forgotSection) {
+    forgotSection.style.display = "block";
+  }
+
+  if (forgotLink) {
+    forgotLink.style.display = "none";
+  }
+}
+
+
+function showLoginForm() {
+  const loginForm = document.getElementById("loginForm");
+  const forgotSection = document.getElementById("forgotPasswordSection");
+  const forgotLink = document.getElementById("forgotPasswordLink");
+
+  if (loginForm) {
+    loginForm.style.display = "block";
+  }
+
+  if (forgotSection) {
+    forgotSection.style.display = "none";
+  }
+
+  if (forgotLink) {
+    forgotLink.style.display = "block";
+  }
+}
+
+
+async function sendPasswordReset() {
+  const emailInput = document.getElementById("resetEmail");
+  const message = document.getElementById("resetMessage");
+  const button = document.getElementById("sendResetButton");
+
+  const email = emailInput.value.trim();
+
+  if (!email) {
+    message.textContent = "Please enter your email address.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Sending...";
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/DeskOS_/reset-password.html"
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    message.textContent =
+      "If an account exists with that email, a password reset link has been sent.";
+
+    emailInput.value = "";
+
+  } catch (error) {
+    console.error("Password reset error:", error);
+
+    message.textContent =
+      "Something went wrong. Please try again.";
+  }
+
+  button.disabled = false;
+  button.textContent = "Send Reset Email";
+}
