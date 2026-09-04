@@ -669,61 +669,59 @@
     );
   };
 
-  // =========================================================
-  // CALENDAR
-  // APPLE CALENDAR STYLE
-  // =========================================================
+// =========================================================
+// CALENDAR
+// APPLE CALENDAR STYLE
+// =========================================================
 
-  let calendarMonth = new Date();
+let calendarMonth = new Date();
+calendarMonth.setDate(1);
 
-  calendarMonth.setDate(1);
+let selectedCalendarDate = todayISO();
 
-  let selectedCalendarDate = todayISO();
+const renderCalendar = () => {
+  return `
+    <section class="page-section calendar-page">
 
-  const renderCalendar = () => {
-    return `
-      <section class="page-section calendar-page">
-
-        <div class="page-heading">
-
-          <div>
-            <p class="eyebrow">SCHEDULE</p>
-
-            <h1>Calendar</h1>
-
-            <p class="page-description">
-              Plan your days and keep track of upcoming events.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="primary-button"
-            id="addEvent"
-          >
-            + New event
-          </button>
-
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">SCHEDULE</p>
+          <h1>Calendar</h1>
+          <p class="page-description">
+            Plan your days and keep track of upcoming events.
+          </p>
         </div>
 
-        <div class="calendar-app">
+        <button
+          type="button"
+          class="primary-button"
+          id="addEvent"
+        >
+          + New event
+        </button>
+      </div>
 
-          <div class="calendar-header">
+      <div class="calendar-app">
 
-            <div class="calendar-header-left">
+        <div class="calendar-header">
 
-              <button
-                type="button"
-                class="calendar-today-button"
-                id="calendarToday"
-              >
-                Today
-              </button>
+          <div class="calendar-header-left">
+
+            <button
+              type="button"
+              class="calendar-today-button"
+              id="calendarToday"
+            >
+              Today
+            </button>
+
+            <div class="calendar-month-navigation">
 
               <button
                 type="button"
                 class="calendar-arrow"
                 id="previousMonth"
+                aria-label="Previous month"
               >
                 ‹
               </button>
@@ -732,699 +730,944 @@
                 type="button"
                 class="calendar-arrow"
                 id="nextMonth"
+                aria-label="Next month"
               >
                 ›
               </button>
 
             </div>
 
-            <h2 id="calendarMonthTitle"></h2>
+          </div>
 
+          <h2 id="calendarMonthTitle"></h2>
+
+        </div>
+
+
+        <!-- CALENDAR -->
+
+        <div class="calendar-frame">
+
+          <div class="calendar-weekdays">
+            <div>MON</div>
+            <div>TUE</div>
+            <div>WED</div>
+            <div>THU</div>
+            <div>FRI</div>
+            <div>SAT</div>
+            <div>SUN</div>
           </div>
 
           <div
             id="bigCalendar"
-            class="big-calendar"
+            class="calendar-grid"
           ></div>
 
         </div>
 
-        <div class="calendar-selected-day">
+      </div>
 
-          <div class="selected-day-header">
 
-            <div>
-              <p class="eyebrow">SELECTED DAY</p>
+      <!-- SELECTED DAY -->
 
-              <h2 id="selectedCalendarTitle">
-                ${escapeHTML(
-                  formatDate(selectedCalendarDate)
-                )}
-              </h2>
-            </div>
+      <div class="calendar-selected-day">
 
-            <button
-              type="button"
-              class="text-action"
-              id="calendarAddTask"
-            >
-              + Task
-            </button>
+        <div class="selected-day-header">
+
+          <div>
+            <p class="eyebrow">SELECTED DAY</p>
+
+            <h2 id="selectedCalendarTitle">
+              ${escapeHTML(formatDate(selectedCalendarDate))}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="text-action"
+            id="calendarAddTask"
+          >
+            + Task
+          </button>
+
+        </div>
+
+        <div
+          id="agendaList"
+          class="agenda-list"
+        ></div>
+
+      </div>
+
+    </section>
+  `;
+};
+
+
+const setupCalendar = () => {
+
+  const calendar = $(".calendar-page");
+
+  if (!calendar) return;
+
+
+  const grid =
+    $("#bigCalendar", calendar);
+
+  const title =
+    $("#calendarMonthTitle", calendar);
+
+  const previous =
+    $("#previousMonth", calendar);
+
+  const next =
+    $("#nextMonth", calendar);
+
+  const todayButton =
+    $("#calendarToday", calendar);
+
+  const agenda =
+    $("#agendaList", calendar);
+
+  const selectedTitle =
+    $("#selectedCalendarTitle", calendar);
+
+  const addEventButton =
+    $("#addEvent", calendar);
+
+  const addTaskButton =
+    $("#calendarAddTask", calendar);
+
+
+  if (!grid) return;
+
+
+  // ---------------------------------------------------------
+  // DATE HELPERS
+  // ---------------------------------------------------------
+
+  const pad = number =>
+    String(number).padStart(2, "0");
+
+
+  const toISO = date =>
+    `${date.getFullYear()}-${pad(
+      date.getMonth() + 1
+    )}-${pad(
+      date.getDate()
+    )}`;
+
+
+  const fromISO = value =>
+    new Date(`${value}T12:00:00`);
+
+
+  const monthLabel = date =>
+    new Intl.DateTimeFormat(
+      undefined,
+      {
+        month: "long",
+        year: "numeric"
+      }
+    ).format(date);
+
+
+  const dayLabel = value =>
+    new Intl.DateTimeFormat(
+      undefined,
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }
+    ).format(fromISO(value));
+
+
+  // ---------------------------------------------------------
+  // RENDER AGENDA
+  // ---------------------------------------------------------
+
+  const renderAgenda = () => {
+
+    const events =
+      (state.state.events || [])
+        .filter(event =>
+          event.date === selectedCalendarDate
+        )
+        .sort((a, b) =>
+          String(a.time || "")
+            .localeCompare(
+              String(b.time || "")
+            )
+        );
+
+
+    const tasks =
+      (state.state.tasks || [])
+        .filter(task =>
+          task.date === selectedCalendarDate
+        )
+        .sort((a, b) =>
+          String(a.due || "")
+            .localeCompare(
+              String(b.due || "")
+            )
+        );
+
+
+    if (selectedTitle) {
+      selectedTitle.textContent =
+        dayLabel(selectedCalendarDate);
+    }
+
+
+    if (
+      events.length === 0 &&
+      tasks.length === 0
+    ) {
+
+      agenda.innerHTML = `
+        <div class="calendar-empty-day">
+
+          <span class="calendar-empty-icon">
+            ○
+          </span>
+
+          <strong>
+            Nothing scheduled
+          </strong>
+
+          <small>
+            Your day is clear.
+          </small>
+
+        </div>
+      `;
+
+      return;
+    }
+
+
+    let html = "";
+
+
+    // -------------------------------------------------------
+    // EVENTS
+    // -------------------------------------------------------
+
+    events.forEach(event => {
+
+      html += `
+        <div class="agenda-row">
+
+          <div class="agenda-time">
+            ${escapeHTML(
+              event.time || "All day"
+            )}
+          </div>
+
+          <div class="agenda-event-dot"></div>
+
+          <div class="agenda-content">
+
+            <strong>
+              ${escapeHTML(
+                event.title ||
+                "Untitled event"
+              )}
+            </strong>
+
+            <small>
+              ${escapeHTML(
+                event.detail ||
+                "DeskOS event"
+              )}
+            </small>
 
           </div>
 
-          <div
-            id="agendaList"
-            class="agenda-list"
-          ></div>
+          <button
+            type="button"
+            class="danger-text"
+            data-calendar-delete-event="${escapeHTML(
+              event.id
+            )}"
+          >
+            Delete
+          </button>
 
         </div>
+      `;
+    });
 
-      </section>
-    `;
+
+    // -------------------------------------------------------
+    // TASKS
+    // -------------------------------------------------------
+
+    tasks.forEach(task => {
+
+      html += `
+        <div class="agenda-row">
+
+          <div class="agenda-time">
+            TASK
+          </div>
+
+          <div class="agenda-task-dot"></div>
+
+          <div class="agenda-content">
+
+            <strong class="${
+              task.complete
+                ? "completed-text"
+                : ""
+            }">
+              ${escapeHTML(
+                task.title ||
+                "Untitled task"
+              )}
+            </strong>
+
+            <small>
+              ${
+                task.complete
+                  ? "Completed"
+                  : "Task"
+              }
+            </small>
+
+          </div>
+
+          <button
+            type="button"
+            class="calendar-task-toggle"
+            data-calendar-task="${escapeHTML(
+              task.id
+            )}"
+          >
+            ${
+              task.complete
+                ? "Undo"
+                : "Done"
+            }
+          </button>
+
+        </div>
+      `;
+    });
+
+
+    agenda.innerHTML = html;
   };
 
-  const setupCalendar = () => {
-    const calendar =
-      $(".calendar-page");
 
-    if (!calendar) return;
+  // ---------------------------------------------------------
+  // RENDER MONTH
+  // ---------------------------------------------------------
 
-    const grid =
-      $("#bigCalendar", calendar);
+  const renderGrid = () => {
 
-    const title =
-      $("#calendarMonthTitle", calendar);
+    const year =
+      calendarMonth.getFullYear();
 
-    const previous =
-      $("#previousMonth", calendar);
+    const month =
+      calendarMonth.getMonth();
 
-    const next =
-      $("#nextMonth", calendar);
 
-    const todayButton =
-      $("#calendarToday", calendar);
+    const firstDay =
+      new Date(
+        year,
+        month,
+        1
+      );
 
-    const agenda =
-      $("#agendaList", calendar);
 
-    const selectedTitle =
-      $("#selectedCalendarTitle", calendar);
+    /*
+      JavaScript:
+      Sunday = 0
+      Monday = 1
+      Tuesday = 2
+      ...
 
-    const addEventButton =
-      $("#addEvent", calendar);
+      Convert this so:
+      Monday = 0
+      Sunday = 6
+    */
 
-    const addTaskButton =
-      $("#calendarAddTask", calendar);
+    const startingDay =
+      (firstDay.getDay() + 6) % 7;
 
-    if (!grid) return;
 
-    const pad =
-      number =>
-        String(number).padStart(2, "0");
+    const daysInMonth =
+      new Date(
+        year,
+        month + 1,
+        0
+      ).getDate();
 
-    const toISO =
-      date =>
-        `${date.getFullYear()}-${pad(
-          date.getMonth() + 1
-        )}-${pad(
-          date.getDate()
-        )}`;
 
-    const fromISO =
-      value =>
-        new Date(`${value}T12:00:00`);
+    const daysInPreviousMonth =
+      new Date(
+        year,
+        month,
+        0
+      ).getDate();
 
-    const monthLabel =
-      date =>
-        new Intl.DateTimeFormat(
-          undefined,
-          {
-            month: "long",
-            year: "numeric"
-          }
-        ).format(date);
 
-    const dayLabel =
-      value =>
-        new Intl.DateTimeFormat(
-          undefined,
-          {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-          }
-        ).format(fromISO(value));
+    const today =
+      todayISO();
 
-    const renderAgenda = () => {
-      const events =
-        (state.state.events || [])
-          .filter(
-            event =>
-              event.date ===
-              selectedCalendarDate
-          )
-          .sort(
-            (a, b) =>
-              String(a.time || "")
-                .localeCompare(
-                  String(b.time || "")
-                )
-          );
 
-      const tasks =
-        (state.state.tasks || [])
-          .filter(
-            task =>
-              task.date ===
-              selectedCalendarDate
-          )
-          .sort(
-            (a, b) =>
-              String(a.due || "")
-                .localeCompare(
-                  String(b.due || "")
-                )
-          );
+    const events =
+      state.state.events || [];
 
-      if (selectedTitle) {
-        selectedTitle.textContent =
-          dayLabel(
-            selectedCalendarDate
-          );
-      }
 
-      const eventRows =
-        events
-          .map(event => `
-            <div class="agenda-row">
+    const tasks =
+      state.state.tasks || [];
 
-              <div class="agenda-time">
-                ${escapeHTML(
-                  event.time ||
-                  "All day"
-                )}
-              </div>
 
-              <div class="agenda-event-dot"></div>
+    // Month heading
 
-              <div class="agenda-content">
+    if (title) {
+      title.textContent =
+        monthLabel(calendarMonth);
+    }
 
-                <strong>
-                  ${escapeHTML(
-                    event.title ||
-                    "Untitled event"
-                  )}
-                </strong>
 
-                <small>
-                  ${escapeHTML(
-                    event.detail ||
-                    "DeskOS event"
-                  )}
-                </small>
+    let html = "";
 
-              </div>
 
-              <button
-                type="button"
-                class="danger-text"
-                data-calendar-delete-event="${escapeHTML(
-                  event.id
-                )}"
-              >
-                Delete
-              </button>
+    // -------------------------------------------------------
+    // PREVIOUS MONTH DAYS
+    // -------------------------------------------------------
 
-            </div>
-          `)
-          .join("");
+    for (
+      let i = startingDay - 1;
+      i >= 0;
+      i--
+    ) {
 
-      const taskRows =
-        tasks
-          .map(task => `
-            <div class="agenda-row">
+      const day =
+        daysInPreviousMonth - i;
 
-              <div class="agenda-time">
-                ${escapeHTML(
-                  task.due ||
-                  "Task"
-                )}
-              </div>
 
-              <div class="agenda-task-dot"></div>
+      html += `
+        <div class="calendar-day outside-month">
 
-              <div class="agenda-content">
+          <div class="calendar-day-top">
 
-                <strong>
-                  ${escapeHTML(
-                    task.title ||
-                    "Untitled task"
-                  )}
-                </strong>
+            <span class="calendar-day-number">
+              ${day}
+            </span>
 
-                <small>
-                  ${
-                    task.complete
-                      ? "Completed"
-                      : "Task"
-                  }
-                </small>
-
-              </div>
-
-              <button
-                type="button"
-                class="calendar-task-toggle"
-                data-calendar-task="${escapeHTML(
-                  task.id
-                )}"
-              >
-                ${
-                  task.complete
-                    ? "Undo"
-                    : "Done"
-                }
-              </button>
-
-            </div>
-          `)
-          .join("");
-
-      if (!eventRows && !taskRows) {
-        agenda.innerHTML = `
-          <div class="calendar-empty-day">
-            <span>○</span>
-            <strong>Nothing scheduled</strong>
-            <small>
-              Your day is clear.
-            </small>
           </div>
-        `;
 
-        return;
-      }
+        </div>
+      `;
+    }
 
-      agenda.innerHTML =
-        eventRows +
-        taskRows;
-    };
 
-    const renderGrid = () => {
-      const year =
-        calendarMonth.getFullYear();
+    // -------------------------------------------------------
+    // CURRENT MONTH
+    // -------------------------------------------------------
 
-      const month =
-        calendarMonth.getMonth();
+    for (
+      let day = 1;
+      day <= daysInMonth;
+      day++
+    ) {
 
-      const firstDay =
-        (
+      const date =
+        toISO(
           new Date(
             year,
             month,
-            1
-          ).getDay() + 6
-        ) % 7;
+            day
+          )
+        );
 
-      const daysInMonth =
-        new Date(
-          year,
-          month + 1,
-          0
-        ).getDate();
 
-      const previousMonthDays =
-        new Date(
-          year,
-          month,
-          0
-        ).getDate();
+      const dayEvents =
+        events.filter(event =>
+          event.date === date
+        );
 
-      const today =
-        todayISO();
 
-      const events =
-        state.state.events || [];
+      const dayTasks =
+        tasks.filter(task =>
+          task.date === date
+        );
 
-      const tasks =
-        state.state.tasks || [];
 
-      if (title) {
-        title.textContent =
-          monthLabel(calendarMonth);
-      }
+      const isToday =
+        date === today;
 
-      let html = `
-        <div class="calendar-weekdays">
 
-          <div>MON</div>
-          <div>TUE</div>
-          <div>WED</div>
-          <div>THU</div>
-          <div>FRI</div>
-          <div>SAT</div>
-          <div>SUN</div>
+      const isSelected =
+        date === selectedCalendarDate;
 
-        </div>
 
-        <div class="calendar-grid">
-      `;
+      const totalItems =
+        dayEvents.length +
+        dayTasks.length;
 
-      for (
-        let i = firstDay - 1;
-        i >= 0;
-        i--
-      ) {
-        const day =
-          previousMonthDays - i;
 
-        html += `
-          <div class="calendar-day outside-month">
+      html += `
+        <button
+          type="button"
+          class="calendar-day ${
+            isToday
+              ? "today"
+              : ""
+          } ${
+            isSelected
+              ? "selected"
+              : ""
+          }"
+          data-calendar-date="${date}"
+        >
+
+          <div class="calendar-day-top">
+
             <span class="calendar-day-number">
               ${day}
             </span>
-          </div>
-        `;
-      }
 
-      for (
-        let day = 1;
-        day <= daysInMonth;
-        day++
-      ) {
-        const date =
-          toISO(
-            new Date(
-              year,
-              month,
-              day
-            )
-          );
-
-        const dayEvents =
-          events.filter(
-            event =>
-              event.date === date
-          );
-
-        const dayTasks =
-          tasks.filter(
-            task =>
-              task.date === date
-          );
-
-        const isToday =
-          date === today;
-
-        const isSelected =
-          date === selectedCalendarDate;
-
-        html += `
-          <button
-            type="button"
-            class="calendar-day ${
+            ${
               isToday
-                ? "today"
+                ? `
+                  <span class="calendar-today-dot"></span>
+                `
                 : ""
-            } ${
-              isSelected
-                ? "selected"
-                : ""
-            }"
-            data-calendar-date="${date}"
-          >
+            }
 
-            <span class="calendar-day-number">
-              ${day}
-            </span>
+          </div>
 
-            <div class="calendar-events">
 
-              ${
-                dayEvents
-                  .slice(0, 3)
-                  .map(event => `
-                    <span class="calendar-event-chip">
+          <div class="calendar-events">
+
+
+            ${
+              dayEvents
+                .slice(0, 3)
+                .map(event => `
+                  <div class="calendar-event-chip">
+
+                    <span class="event-chip-dot"></span>
+
+                    <span>
                       ${escapeHTML(
                         event.title ||
                         "Event"
                       )}
                     </span>
-                  `)
-                  .join("")
-              }
 
-              ${
-                dayTasks
-                  .slice(0, 2)
-                  .map(task => `
-                    <span class="calendar-task-chip ${
-                      task.complete
-                        ? "complete"
-                        : ""
-                    }">
+                  </div>
+                `)
+                .join("")
+            }
+
+
+            ${
+              dayTasks
+                .slice(0, 2)
+                .map(task => `
+                  <div class="calendar-task-chip ${
+                    task.complete
+                      ? "complete"
+                      : ""
+                  }">
+
+                    <span class="task-chip-check">
+                      ${
+                        task.complete
+                          ? "✓"
+                          : ""
+                      }
+                    </span>
+
+                    <span>
                       ${escapeHTML(
                         task.title ||
                         "Task"
                       )}
                     </span>
-                  `)
-                  .join("")
-              }
 
-              ${
-                dayEvents.length +
-                dayTasks.length > 5
-                  ? `
-                    <small class="calendar-more">
-                      +${
-                        dayEvents.length +
-                        dayTasks.length -
-                        5
-                      } more
-                    </small>
-                  `
-                  : ""
-              }
+                  </div>
+                `)
+                .join("")
+            }
 
-            </div>
 
-          </button>
-        `;
-      }
+            ${
+              totalItems > 5
+                ? `
+                  <div class="calendar-more">
+                    +${totalItems - 5} more
+                  </div>
+                `
+                : ""
+            }
 
-      const totalCells =
-        firstDay +
-        daysInMonth;
 
-      const remaining =
-        Math.ceil(totalCells / 7) * 7 -
-        totalCells;
+          </div>
 
-      for (
-        let day = 1;
-        day <= remaining;
-        day++
-      ) {
-        html += `
-          <div class="calendar-day outside-month">
+        </button>
+      `;
+    }
+
+
+    // -------------------------------------------------------
+    // NEXT MONTH DAYS
+    // -------------------------------------------------------
+
+    const totalDays =
+      startingDay +
+      daysInMonth;
+
+
+    const totalCells =
+      Math.ceil(totalDays / 7) * 7;
+
+
+    const remainingDays =
+      totalCells -
+      totalDays;
+
+
+    for (
+      let day = 1;
+      day <= remainingDays;
+      day++
+    ) {
+
+      html += `
+        <div class="calendar-day outside-month">
+
+          <div class="calendar-day-top">
+
             <span class="calendar-day-number">
               ${day}
             </span>
+
           </div>
-        `;
-      }
 
-      html += "</div>";
+        </div>
+      `;
+    }
 
-      grid.innerHTML = html;
 
-      $$(
-        "[data-calendar-date]",
-        grid
-      ).forEach(button => {
-        button.addEventListener(
-          "click",
-          () => {
-            selectedCalendarDate =
-              button.dataset.calendarDate;
+    // Put ONLY the day cells inside the grid
 
-            renderGrid();
-            renderAgenda();
-          }
-        );
-      });
+    grid.innerHTML = html;
 
-      renderAgenda();
-    };
 
-    previous?.addEventListener(
-      "click",
-      () => {
-        calendarMonth.setMonth(
-          calendarMonth.getMonth() - 1
-        );
+    // -------------------------------------------------------
+    // SELECT DAY
+    // -------------------------------------------------------
 
-        renderGrid();
-      }
-    );
+    $$(
+      "[data-calendar-date]",
+      grid
+    ).forEach(button => {
 
-    next?.addEventListener(
-      "click",
-      () => {
-        calendarMonth.setMonth(
-          calendarMonth.getMonth() + 1
-        );
+      button.addEventListener(
+        "click",
+        () => {
 
-        renderGrid();
-      }
-    );
+          selectedCalendarDate =
+            button.dataset.calendarDate;
 
-    todayButton?.addEventListener(
-      "click",
-      () => {
-        const today =
-          new Date();
-
-        calendarMonth =
-          new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            1
-          );
-
-        selectedCalendarDate =
-          toISO(today);
-
-        renderGrid();
-      }
-    );
-
-    addEventButton?.addEventListener(
-      "click",
-      () => {
-        const title =
-          window.prompt(
-            `Event for ${dayLabel(
-              selectedCalendarDate
-            )}`,
-            "New event"
-          );
-
-        if (!title?.trim()) return;
-
-        const time =
-          window.prompt(
-            "Time",
-            "10:00"
-          ) || "All day";
-
-        state.addEvent(
-          title.trim(),
-          selectedCalendarDate,
-          time.trim() || "All day",
-          "DeskOS event",
-          "coral"
-        );
-
-        toast("Event created");
-
-        renderGrid();
-      }
-    );
-
-    addTaskButton?.addEventListener(
-      "click",
-      () => {
-        const title =
-          window.prompt(
-            `Task for ${dayLabel(
-              selectedCalendarDate
-            )}`,
-            "New task"
-          );
-
-        if (!title?.trim()) return;
-
-        const due =
-          window.prompt(
-            "Time or label",
-            "Today"
-          ) || "Today";
-
-        const task =
-          state.addTask(
-            title.trim(),
-            due.trim()
-          );
-
-        if (task) {
-          state.updateTask(
-            task.id,
-            {
-              date:
-                selectedCalendarDate
-            }
-          );
-        }
-
-        toast("Task created");
-
-        renderGrid();
-      }
-    );
-
-    agenda?.addEventListener(
-      "click",
-      event => {
-        const deleteButton =
-          event.target.closest(
-            "[data-calendar-delete-event]"
-          );
-
-        if (deleteButton) {
-          if (
-            !window.confirm(
-              "Delete this event?"
-            )
-          ) {
-            return;
-          }
-
-          state.deleteEvent(
-            deleteButton.dataset
-              .calendarDeleteEvent
-          );
-
-          toast("Event deleted");
 
           renderGrid();
 
+        }
+      );
+
+    });
+
+
+    renderAgenda();
+  };
+
+
+  // ---------------------------------------------------------
+  // PREVIOUS MONTH
+  // ---------------------------------------------------------
+
+  previous?.addEventListener(
+    "click",
+    () => {
+
+      calendarMonth =
+        new Date(
+          calendarMonth.getFullYear(),
+          calendarMonth.getMonth() - 1,
+          1
+        );
+
+
+      renderGrid();
+
+    }
+  );
+
+
+  // ---------------------------------------------------------
+  // NEXT MONTH
+  // ---------------------------------------------------------
+
+  next?.addEventListener(
+    "click",
+    () => {
+
+      calendarMonth =
+        new Date(
+          calendarMonth.getFullYear(),
+          calendarMonth.getMonth() + 1,
+          1
+        );
+
+
+      renderGrid();
+
+    }
+  );
+
+
+  // ---------------------------------------------------------
+  // TODAY
+  // ---------------------------------------------------------
+
+  todayButton?.addEventListener(
+    "click",
+    () => {
+
+      const today =
+        new Date();
+
+
+      calendarMonth =
+        new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          1
+        );
+
+
+      selectedCalendarDate =
+        toISO(today);
+
+
+      renderGrid();
+
+    }
+  );
+
+
+  // ---------------------------------------------------------
+  // ADD EVENT
+  // ---------------------------------------------------------
+
+  addEventButton?.addEventListener(
+    "click",
+    () => {
+
+      const title =
+        window.prompt(
+          `Event for ${dayLabel(
+            selectedCalendarDate
+          )}`,
+          "New event"
+        );
+
+
+      if (!title?.trim()) return;
+
+
+      const time =
+        window.prompt(
+          "Time",
+          "10:00"
+        ) || "All day";
+
+
+      state.addEvent(
+        title.trim(),
+        selectedCalendarDate,
+        time.trim() || "All day",
+        "DeskOS event",
+        "coral"
+      );
+
+
+      toast("Event created");
+
+
+      renderGrid();
+
+    }
+  );
+
+
+  // ---------------------------------------------------------
+  // ADD TASK
+  // ---------------------------------------------------------
+
+  addTaskButton?.addEventListener(
+    "click",
+    () => {
+
+      const title =
+        window.prompt(
+          `Task for ${dayLabel(
+            selectedCalendarDate
+          )}`,
+          "New task"
+        );
+
+
+      if (!title?.trim()) return;
+
+
+      const due =
+        window.prompt(
+          "Time or label",
+          "Today"
+        ) || "Today";
+
+
+      const task =
+        state.addTask(
+          title.trim(),
+          due.trim()
+        );
+
+
+      if (task) {
+
+        state.updateTask(
+          task.id,
+          {
+            date:
+              selectedCalendarDate
+          }
+        );
+
+      }
+
+
+      toast("Task created");
+
+
+      renderGrid();
+
+    }
+  );
+
+
+  // ---------------------------------------------------------
+  // AGENDA ACTIONS
+  // ---------------------------------------------------------
+
+  agenda?.addEventListener(
+    "click",
+    event => {
+
+
+      // Delete event
+
+      const deleteButton =
+        event.target.closest(
+          "[data-calendar-delete-event]"
+        );
+
+
+      if (deleteButton) {
+
+        if (
+          !window.confirm(
+            "Delete this event?"
+          )
+        ) {
           return;
         }
 
-        const taskButton =
-          event.target.closest(
-            "[data-calendar-task]"
-          );
 
-        if (taskButton) {
-          const id =
-            taskButton.dataset
-              .calendarTask;
+        state.deleteEvent(
+          deleteButton.dataset
+            .calendarDeleteEvent
+        );
 
-          const task =
-            (state.state.tasks || [])
-              .find(
-                item =>
-                  item.id === id
-              );
 
-          if (!task) return;
+        toast("Event deleted");
 
-          state.updateTask(
-            id,
-            {
-              complete:
-                !task.complete
-            }
-          );
 
-          toast(
-            task.complete
-              ? "Task reopened"
-              : "Task completed"
-          );
+        renderGrid();
 
-          renderGrid();
-        }
+
+        return;
       }
-    );
 
-    renderGrid();
-  };
 
+      // Toggle task
+
+      const taskButton =
+        event.target.closest(
+          "[data-calendar-task]"
+        );
+
+
+      if (taskButton) {
+
+        const id =
+          taskButton.dataset
+            .calendarTask;
+
+
+        const task =
+          (state.state.tasks || [])
+            .find(item =>
+              item.id === id
+            );
+
+
+        if (!task) return;
+
+
+        state.updateTask(
+          id,
+          {
+            complete:
+              !task.complete
+          }
+        );
+
+
+        toast(
+          task.complete
+            ? "Task reopened"
+            : "Task completed"
+        );
+
+
+        renderGrid();
+
+      }
+
+    }
+  );
+
+
+  // ---------------------------------------------------------
+  // INITIAL RENDER
+  // ---------------------------------------------------------
+
+  renderGrid();
+
+};
   // =========================================================
   // NOTES
   // APPLE NOTES STYLE
