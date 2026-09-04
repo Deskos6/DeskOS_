@@ -53,3 +53,11 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
 }
+/* Allow login page to scroll */
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
