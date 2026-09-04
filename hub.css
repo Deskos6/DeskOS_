@@ -1,9 +1,49 @@
 /* =========================================================
    DESKOS HUB
-   Matches the main DeskOS styles.css design system
    ========================================================= */
 
-/* ---------- Base ---------- */
+:root {
+  --ink: #20241f;
+  --muted: #777b73;
+  --line: #e9e8e2;
+  --paper: #fbfbf8;
+  --panel: #fff;
+  --lime: #d8f258;
+  --lime-deep: #b4cb3d;
+  --pink: #e9a2a9;
+  --purple: #e4d5f7;
+  --sky: #d9e9f8;
+  --cream: #f3ecd9;
+  --soft: #f5f5f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+#hubContent {
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* =========================================================
+   HUB FOUNDATION
+   ========================================================= */
 
 .hub-workspace {
   background: #f5f5f1;
@@ -13,7 +53,7 @@
   width: 100%;
   max-width: 1550px;
   margin: 0 auto;
-  padding-bottom: 40px;
+  padding-bottom: 45px;
 }
 
 .hub-page {
@@ -22,10 +62,10 @@
 
 .hub-page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  padding: 36px 3px 27px;
   gap: 20px;
+  padding: 36px 3px 27px;
 }
 
 .hub-page-heading {
@@ -59,12 +99,13 @@
 .hub-page-actions {
   display: flex;
   align-items: center;
-  gap: 9px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
 
-/* ---------- Buttons ---------- */
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
 .hub-button {
   min-height: 34px;
@@ -79,35 +120,28 @@
 }
 
 .hub-button:hover {
-  border-color: #b7c789;
   background: #fafbf7;
+  border-color: #b7c789;
 }
 
 .hub-button.primary {
-  border-color: var(--lime);
   background: var(--lime);
+  border-color: var(--lime);
   color: #263019;
   box-shadow: inset 0 -1px rgba(80, 100, 0, .15);
 }
 
 .hub-button.primary:hover {
-  background: #d0eb4e;
-}
-
-.hub-button.danger {
-  color: #b56666;
-}
-
-.hub-button.danger:hover {
-  border-color: #e8b8b8;
-  background: #fff7f7;
+  background: #cfea4e;
 }
 
 
-/* ---------- Cards ---------- */
+/* =========================================================
+   GENERIC CARDS
+   ========================================================= */
 
 .hub-card {
-  background: var(--panel);
+  background: #fff;
   border: 1px solid var(--line);
   border-radius: 13px;
   padding: 19px;
@@ -121,21 +155,19 @@
   gap: 15px;
 }
 
-.hub-card-title {
-  margin: 5px 0 0;
-  color: var(--ink);
-  font-size: 14px;
-  line-height: 1.2;
-  letter-spacing: -.55px;
-}
-
 .hub-card-label {
   margin: 0;
   color: #93978f;
   font-size: 9px;
-  letter-spacing: 1.35px;
   font-weight: 800;
+  letter-spacing: 1.35px;
   text-transform: uppercase;
+}
+
+.hub-card-title {
+  margin: 5px 0 0;
+  font-size: 14px;
+  letter-spacing: -.55px;
 }
 
 
@@ -145,7 +177,7 @@
 
 .tasks-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 275px;
   gap: 15px;
   align-items: start;
 }
@@ -164,25 +196,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 13px;
+  margin-bottom: 15px;
 }
 
 .task-filters {
   display: flex;
-  align-items: center;
   gap: 5px;
 }
 
 .task-filter {
-  padding: 6px 9px;
-  border-radius: 6px;
+  padding: 7px 10px;
+  border-radius: 7px;
   color: #8a8f87;
   font-size: 9px;
   font-weight: 700;
 }
 
 .task-filter:hover {
-  background: #eeeeea;
+  background: #ededE8;
 }
 
 .task-filter.active {
@@ -190,36 +221,44 @@
   color: #58634f;
 }
 
+
+/* TASK BOXES */
+
 .task-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .task-row {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 9px 2px;
-  border-bottom: 1px solid #f0f0ec;
-}
-
-.task-row:last-child {
-  border-bottom: 0;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 78px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fff;
+  transition: .2s;
 }
 
 .task-row:hover {
-  background: #fafaf7;
+  border-color: #ccd6b5;
+  background: #fcfdf9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(32, 36, 31, .04);
 }
 
 .task-check {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   flex-shrink: 0;
+  margin-top: 1px;
   border: 1.5px solid #c5c9c1;
-  border-radius: 4px;
+  border-radius: 5px;
   display: grid;
   place-items: center;
-  cursor: pointer;
 }
 
 .task-row.complete .task-check {
@@ -229,7 +268,7 @@
 
 .task-row.complete .task-check::after {
   content: "✓";
-  color: #fff;
+  color: white;
   font-size: 9px;
   font-weight: 800;
 }
@@ -241,12 +280,10 @@
 
 .task-name {
   display: block;
-  overflow: hidden;
   color: #454a43;
   font-size: 10px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .task-row.complete .task-name {
@@ -257,8 +294,8 @@
 .task-meta {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .task-due {
@@ -268,7 +305,7 @@
 }
 
 .task-tag {
-  padding: 3px 5px;
+  padding: 3px 6px;
   border-radius: 5px;
   background: #f2e7d2;
   color: #a87e44;
@@ -277,7 +314,6 @@
 
 .task-actions {
   display: flex;
-  align-items: center;
   gap: 3px;
   opacity: 0;
   transition: .2s;
@@ -288,182 +324,218 @@
 }
 
 .task-action {
-  width: 26px;
-  height: 26px;
+  width: 25px;
+  height: 25px;
   border-radius: 6px;
   color: #92988f;
-  font-size: 12px;
 }
 
 .task-action:hover {
-  background: #f1f2ed;
-  color: #4f584d;
+  background: #f0f1ec;
 }
+
+
+/* TASK SIDEBAR */
 
 .task-summary {
   display: grid;
-  gap: 15px;
+  gap: 10px;
 }
 
 .task-stat {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #eeeeea;
-}
-
-.task-stat:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
+  padding: 14px;
+  border: 1px solid #eeeeea;
+  border-radius: 9px;
+  background: #fafaf7;
 }
 
 .task-stat strong {
+  display: block;
   font-family: "DM Mono", monospace;
-  font-size: 19px;
+  font-size: 21px;
   letter-spacing: -1px;
 }
 
 .task-stat span {
+  display: block;
+  margin-top: 4px;
   color: #969b93;
-  font-size: 9px;
+  font-size: 8px;
 }
 
 
 /* =========================================================
-   NOTES
+   CALENDAR
    ========================================================= */
 
-.notes-layout {
+.calendar-page {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  min-height: 560px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  overflow: hidden;
+  gap: 15px;
 }
 
-.notes-list {
-  background: #fafaf7;
-  border-right: 1px solid var(--line);
-}
-
-.notes-list-header {
+.calendar-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid var(--line);
+  padding: 15px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
 }
 
-.notes-list-title {
-  color: #93978f;
-  font-size: 9px;
+.calendar-month {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-month h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -.7px;
+}
+
+.calendar-navigation {
+  display: flex;
+  gap: 5px;
+}
+
+.calendar-nav-button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: #747a71;
+}
+
+.calendar-nav-button:hover {
+  background: #f4f5f0;
+}
+
+
+/* PROPER CALENDAR */
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fff;
+  overflow: hidden;
+}
+
+
+/* DAYS OF WEEK */
+
+.calendar-weekday {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #fafaf7;
+  color: #969b93;
+  font-size: 8px;
   font-weight: 800;
-  letter-spacing: 1.35px;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
-.note-new {
-  width: 27px;
-  height: 27px;
-  border-radius: 7px;
+.calendar-weekday:nth-child(7) {
+  border-right: 0;
+}
+
+
+/* DAY BOX */
+
+.calendar-day {
+  position: relative;
+  min-height: 125px;
+  padding: 9px;
+  border-right: 1px solid #eeeeea;
+  border-bottom: 1px solid #eeeeea;
+  background: #fff;
+  transition: .15s;
+}
+
+.calendar-day:nth-child(7n) {
+  border-right: 0;
+}
+
+.calendar-day:hover {
+  background: #fcfcf9;
+}
+
+.calendar-day.muted {
+  background: #fafaf8;
+}
+
+.calendar-day-number {
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  color: #686e65;
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+}
+
+
+/* TODAY */
+
+.calendar-day.today .calendar-day-number {
   background: var(--lime);
-  color: #263019;
-  font-size: 16px;
+  color: #27311e;
+  font-weight: 800;
 }
 
-.note-list {
-  display: grid;
-}
 
-.note-list-item {
+/* EVENTS */
+
+.calendar-event {
   display: block;
   width: 100%;
-  padding: 13px 15px;
-  border-bottom: 1px solid #eeeeea;
+  margin-top: 5px;
+  padding: 6px 7px;
+  border-radius: 6px;
+  background: #f4e3df;
+  color: #775d57;
   text-align: left;
-}
-
-.note-list-item:hover {
-  background: #f3f4ed;
-}
-
-.note-list-item.active {
-  background: #eef2e3;
-  border-left: 3px solid var(--lime-deep);
-  padding-left: 12px;
-}
-
-.note-list-item strong {
-  display: block;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.25;
   overflow: hidden;
-  color: #454a43;
-  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.note-list-item span {
-  display: block;
-  margin-top: 4px;
-  color: #a0a59d;
-  font-family: "DM Mono", monospace;
-  font-size: 7px;
+.calendar-event:hover {
+  filter: brightness(.97);
 }
 
-.note-editor {
-  min-width: 0;
-  padding: 27px 30px;
+.calendar-event.blue {
+  background: var(--sky);
+  color: #607b98;
 }
 
-.note-editor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 20px;
+.calendar-event.purple {
+  background: var(--purple);
+  color: #7e6999;
 }
 
-.note-editor-title {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ink);
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 25px;
-  font-weight: 600;
-  letter-spacing: -.7px;
+.calendar-event.yellow {
+  background: #f7ebc9;
+  color: #987f42;
 }
 
-.note-editor textarea {
-  width: 100%;
-  min-height: 400px;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  resize: vertical;
-  background: transparent;
-  color: #50564f;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 15px;
-  line-height: 1.65;
-}
-
-.note-editor textarea::placeholder {
-  color: #c0c4bd;
-}
-
-.note-editor-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  color: #a0a59d;
-  font-size: 8px;
+.calendar-event.green {
+  background: #e5edd2;
+  color: #687b4c;
 }
 
 
@@ -476,21 +548,24 @@
   gap: 15px;
 }
 
+
+/* UPLOAD AREA */
+
 .files-upload {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 85px;
+  min-height: 90px;
   padding: 18px 20px;
-  border: 1px dashed #cfd3c9;
+  border: 1px dashed #cbd0c6;
   border-radius: 12px;
   background: #fafbf7;
   transition: .2s;
 }
 
 .files-upload:hover {
-  border-color: #aebd82;
-  background: #f6f8ef;
+  border-color: #b7c789;
+  background: #f7f9ef;
 }
 
 .files-upload-info {
@@ -500,13 +575,13 @@
 }
 
 .files-upload-icon {
-  width: 37px;
-  height: 37px;
+  width: 39px;
+  height: 39px;
   display: grid;
   place-items: center;
   border-radius: 9px;
-  background: #e8efd5;
-  color: #75884b;
+  background: #e9efd9;
+  color: #73854d;
   font-size: 17px;
 }
 
@@ -517,68 +592,76 @@
 
 .files-upload span {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   color: #9ba098;
   font-size: 8px;
 }
 
+
+/* FILE GRID */
+
 .file-table {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  overflow: visible;
 }
+
+
+/*
+   Hide the table header because we're using
+   proper file cards.
+*/
 
 .file-head {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) 120px 120px 100px;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 17px;
-  border-bottom: 1px solid var(--line);
-  background: #fafaf7;
-  color: #9a9f97;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  display: none;
 }
 
+
+/* FILE CARD */
+
 .file-table-row {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) 120px 120px 100px;
-  align-items: center;
-  min-height: 62px;
-  padding: 0 17px;
-  border-bottom: 1px solid #f0f0ec;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 150px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
   transition: .2s;
 }
 
-.file-table-row:last-child {
-  border-bottom: 0;
+.file-table-row:hover {
+  border-color: #cbd5b6;
+  background: #fcfdf9;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(32, 36, 31, .05);
 }
 
-.file-table-row:hover {
-  background: #fafbf7;
-}
+
+/* FILE NAME */
 
 .file-name-cell {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 11px;
   min-width: 0;
 }
 
 .file-icon {
-  width: 29px;
-  height: 32px;
+  width: 36px;
+  height: 40px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 5px 5px 8px 5px;
+  border-radius: 6px 6px 9px 6px;
   background: #f9d7dc;
   color: #bd6973;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .file-icon.blue {
@@ -599,70 +682,91 @@
   display: block;
   overflow: hidden;
   color: #454a43;
-  font-size: 9px;
+  font-size: 10px;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .file-name small {
   display: block;
-  margin-top: 3px;
-  overflow: hidden;
+  margin-top: 5px;
   color: #9ba098;
   font-size: 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
+
+/* FILE INFORMATION */
+
 .file-meta {
-  color: #92978f;
+  margin-top: 13px;
+  color: #9ba098;
   font-family: "DM Mono", monospace;
   font-size: 8px;
 }
 
+
+/* FILE ACTIONS */
+
 .file-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 15px;
 }
 
 .file-open-button,
 .file-delete-button {
-  min-height: 27px;
-  padding: 0 8px;
+  min-height: 28px;
+  padding: 0 9px;
   border-radius: 6px;
   font-size: 8px;
   font-weight: 700;
+  transition: .2s;
 }
 
 .file-open-button {
+  flex: 1;
   border: 1px solid var(--line);
-  color: #68725f;
   background: #fff;
+  color: #68725f;
 }
 
 .file-open-button:hover {
-  border-color: #bccb91;
+  border-color: #bdca91;
   background: #f7f9ef;
 }
 
 .file-delete-button {
-  color: #aa7777;
+  border: 1px solid transparent;
+  color: #a66f6f;
 }
 
 .file-delete-button:hover {
   background: #fff0f0;
+  border-color: #efd4d4;
 }
 
+
+/* EMPTY FILE STATE */
+
 .file-empty {
-  padding: 60px 20px;
+  grid-column: 1 / -1;
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fff;
   text-align: center;
 }
 
 .file-empty-icon {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   margin: 0 auto 13px;
   display: grid;
   place-items: center;
@@ -687,148 +791,119 @@
 
 
 /* =========================================================
-   CALENDAR
+   NOTES
    ========================================================= */
 
-.calendar-page {
+.notes-layout {
   display: grid;
-  gap: 15px;
+  grid-template-columns: 265px minmax(0, 1fr);
+  min-height: 570px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fff;
+  overflow: hidden;
 }
 
-.calendar-toolbar {
+.notes-list {
+  background: #fafaf7;
+  border-right: 1px solid var(--line);
+}
+
+.notes-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
-}
-
-.calendar-month {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.calendar-month h2 {
-  margin: 0;
-  color: var(--ink);
-  font-size: 17px;
-  letter-spacing: -.7px;
-}
-
-.calendar-navigation {
-  display: flex;
-  gap: 4px;
-}
-
-.calendar-nav-button {
-  width: 29px;
-  height: 29px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #fff;
-  color: #737a70;
-  font-size: 12px;
-}
-
-.calendar-nav-button:hover {
-  background: #f5f6f1;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  overflow: hidden;
-}
-
-.calendar-weekday {
-  min-height: 36px;
-  display: grid;
-  place-items: center;
-  border-right: 1px solid var(--line);
+  padding: 17px;
   border-bottom: 1px solid var(--line);
-  background: #fafaf7;
-  color: #a0a49c;
-  font-size: 8px;
+}
+
+.notes-list-title {
+  color: #93978f;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 1.35px;
   text-transform: uppercase;
 }
 
-.calendar-weekday:nth-child(7) {
-  border-right: 0;
-}
-
-.calendar-day {
-  position: relative;
-  min-height: 105px;
-  padding: 9px;
-  border-right: 1px solid #eeeeea;
-  border-bottom: 1px solid #eeeeea;
-  background: #fff;
-}
-
-.calendar-day:nth-child(7n) {
-  border-right: 0;
-}
-
-.calendar-day:hover {
-  background: #fafbf7;
-}
-
-.calendar-day.muted {
-  background: #fafaf8;
-}
-
-.calendar-day-number {
-  width: 23px;
-  height: 23px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 6px;
-  border-radius: 50%;
-  color: #686e65;
-  font-family: "DM Mono", monospace;
-  font-size: 8px;
-}
-
-.calendar-day.today .calendar-day-number {
+.note-new {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   background: var(--lime);
-  color: #27311e;
-  font-weight: 800;
+  color: #263019;
+  font-size: 16px;
 }
 
-.calendar-event {
-  display: block;
+.note-list {
+  display: grid;
+}
+
+.note-list-item {
   width: 100%;
-  margin-top: 4px;
-  padding: 5px 6px;
-  border-radius: 5px;
-  background: #f2e5e0;
-  color: #765e57;
+  padding: 13px 16px;
+  border-bottom: 1px solid #eeeeea;
   text-align: left;
-  font-size: 8px;
-  font-weight: 700;
+}
+
+.note-list-item:hover {
+  background: #f4f5ef;
+}
+
+.note-list-item.active {
+  background: #eef2e3;
+  border-left: 3px solid var(--lime-deep);
+  padding-left: 13px;
+}
+
+.note-list-item strong {
+  display: block;
   overflow: hidden;
+  color: #454a43;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.calendar-event.blue {
-  background: var(--sky);
-  color: #617c99;
+.note-list-item span {
+  display: block;
+  margin-top: 4px;
+  color: #a0a59d;
+  font-family: "DM Mono", monospace;
+  font-size: 7px;
 }
 
-.calendar-event.purple {
-  background: var(--purple);
-  color: #806d9b;
+.note-editor {
+  min-width: 0;
+  padding: 28px 32px;
 }
 
-.calendar-event.yellow {
-  background: #f7ebc9;
-  color: #9b8142;
+.note-editor-title {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 25px;
+}
+
+.note-editor textarea {
+  width: 100%;
+  min-height: 410px;
+  margin-top: 20px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  background: transparent;
+  color: #50564f;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.note-editor textarea::placeholder {
+  color: #c0c4bd;
 }
 
 
@@ -842,10 +917,10 @@
 }
 
 .search-box {
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 47px;
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -868,55 +943,11 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: var(--ink);
   font-size: 11px;
 }
 
 .search-box input::placeholder {
   color: #b3b7b0;
-}
-
-.search-results {
-  display: grid;
-  gap: 8px;
-}
-
-.search-result {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
-  transition: .2s;
-}
-
-.search-result:hover {
-  border-color: #c9d4b2;
-  background: #fafbf7;
-}
-
-.search-result-icon {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  background: #f0f1ec;
-  color: #788072;
-}
-
-.search-result strong {
-  display: block;
-  font-size: 10px;
-}
-
-.search-result span {
-  display: block;
-  margin-top: 3px;
-  color: #9ba098;
-  font-size: 8px;
 }
 
 
@@ -926,17 +957,14 @@
 
 .hub-empty {
   min-height: 300px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 40px;
   border: 1px solid var(--line);
   border-radius: 13px;
   background: #fff;
   text-align: center;
-}
-
-.hub-empty-inner {
-  max-width: 330px;
 }
 
 .hub-empty-icon {
@@ -955,7 +983,6 @@
   margin: 0;
   color: #4b514a;
   font-size: 14px;
-  letter-spacing: -.4px;
 }
 
 .hub-empty p {
@@ -976,10 +1003,14 @@
   gap: 15px;
 }
 
-.profile-card {
-  background: #fff;
+.profile-card,
+.profile-section {
   border: 1px solid var(--line);
   border-radius: 13px;
+  background: #fff;
+}
+
+.profile-card {
   padding: 25px 20px;
   text-align: center;
 }
@@ -1014,9 +1045,6 @@
 }
 
 .profile-section {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 13px;
   padding: 20px;
 }
 
@@ -1027,67 +1055,17 @@
 
 
 /* =========================================================
-   NOTIFICATIONS
-   ========================================================= */
-
-.notification-list {
-  display: grid;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  overflow: hidden;
-}
-
-.notification-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  padding: 15px 17px;
-  border-bottom: 1px solid #eeeeea;
-}
-
-.notification-item:last-child {
-  border-bottom: 0;
-}
-
-.notification-item.unread {
-  background: #fbfcf7;
-}
-
-.notification-dot {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  margin-top: 5px;
-  border-radius: 50%;
-  background: var(--lime-deep);
-}
-
-.notification-item strong {
-  display: block;
-  font-size: 10px;
-}
-
-.notification-item p {
-  margin: 4px 0 0;
-  color: #8f958c;
-  font-size: 9px;
-  line-height: 1.45;
-}
-
-
-/* =========================================================
    PINNED PAGES
    ========================================================= */
 
 .pinned-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
 
 .pinned-card {
-  min-height: 135px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1104,8 +1082,8 @@
 }
 
 .pinned-icon {
-  width: 31px;
-  height: 31px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -1133,7 +1111,7 @@
 
 .help-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 15px;
 }
 
@@ -1197,27 +1175,17 @@
     padding-bottom: 32px;
   }
 
-  .hub-page-header {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
   .tasks-layout {
     grid-template-columns: minmax(0, 1fr) 240px;
   }
 
-  .notes-layout {
-    grid-template-columns: 230px minmax(0, 1fr);
-  }
-
-  .profile-page {
-    grid-template-columns: 240px minmax(0, 1fr);
+  .file-table {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .calendar-day {
-    min-height: 90px;
+    min-height: 110px;
   }
-
 }
 
 
@@ -1229,27 +1197,24 @@
   }
 
   .tasks-sidebar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .task-list {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-layout {
+    grid-template-columns: 230px minmax(0, 1fr);
   }
 
   .pinned-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .help-grid {
     grid-template-columns: 1fr;
   }
-
-  .file-head,
-  .file-table-row {
-    grid-template-columns: minmax(200px, 1fr) 100px 90px;
-  }
-
-  .file-head > :nth-child(2),
-  .file-table-row > :nth-child(2) {
-    display: none;
-  }
-
 }
 
 
@@ -1270,45 +1235,21 @@
 
   .notes-list {
     max-height: 230px;
+    overflow-y: auto;
     border-right: 0;
     border-bottom: 1px solid var(--line);
-    overflow-y: auto;
-  }
-
-  .note-editor {
-    padding: 22px;
   }
 
   .tasks-sidebar {
     grid-template-columns: 1fr;
   }
 
-  .pinned-grid {
+  .file-table {
     grid-template-columns: 1fr;
   }
 
-  .file-head {
-    display: none;
-  }
-
-  .file-table-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: 11px 13px;
-  }
-
-  .file-table-row > :nth-child(2),
-  .file-table-row > :nth-child(3) {
-    display: none;
-  }
-
-  .file-actions {
-    grid-column: 2;
-  }
-
-  .files-upload {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
+  .pinned-grid {
+    grid-template-columns: 1fr;
   }
 
   .calendar-grid {
@@ -1319,106 +1260,4 @@
   .calendar-weekday {
     min-width: 100px;
   }
-
-}
-
-
-/* =========================================================
-   DESKOS SIDEBAR COMPATIBILITY
-   ========================================================= */
-
-.hub-workspace .topbar {
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-}
-
-.hub-workspace .top-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hub-workspace .icon-button {
-  height: 33px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #596058;
-  transition: .2s;
-}
-
-.hub-workspace .icon-button:hover {
-  border-color: #b7c789;
-  background: #fff;
-}
-
-.hub-workspace .new-button {
-  color: #263019;
-  background: var(--lime);
-  padding: 9px 14px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 800;
-  box-shadow: inset 0 -1px rgba(80, 100, 0, .15);
-}
-
-.hub-workspace .new-button span {
-  font-size: 17px;
-  line-height: 0;
-  vertical-align: -1px;
-  margin-right: 5px;
-  font-weight: 400;
-}
-
-
-/* =========================================================
-   FIXES FOR DYNAMIC HUB CONTENT
-   ========================================================= */
-
-#hubContent {
-  min-width: 0;
-}
-
-#hubContent * {
-  box-sizing: border-box;
-}
-
-#hubContent button {
-  font-family: inherit;
-}
-
-#hubContent input,
-#hubContent textarea,
-#hubContent select {
-  font-family: inherit;
-}
-
-#hubContent img {
-  max-width: 100%;
-}
-
-
-/* Keep the Hub inside the existing DeskOS workspace */
-.workspace.hub-workspace {
-  min-width: 0;
-}
-
-
-/* Don't let dynamically generated tables break the page */
-.file-table,
-.files-layout,
-.notes-layout,
-.calendar-page,
-.tasks-layout {
-  min-width: 0;
-}
-
-
-/* =========================================================
-   END DESKOS HUB
-   ========================================================= */
+}========================================================= */
