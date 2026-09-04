@@ -1,35 +1,45 @@
 (() => {
   "use strict";
 
+  // =========================================================
+  // DESKOS HUB
+  // =========================================================
+
   const state = window.DeskOS;
 
   if (!state) {
-    console.error("DeskOS: data.js must load before hub.js");
+    console.error("DeskOS: data.js must load before hub.js.");
     return;
   }
 
-  const $ = (selector, root = document) =>
-    root.querySelector(selector);
+  // =========================================================
+  // HELPERS
+  // =========================================================
 
-  const $$ = (selector, root = document) =>
-    Array.from(root.querySelectorAll(selector));
+  const $ = (selector, parent = document) =>
+    parent.querySelector(selector);
 
-  const escapeHTML = value =>
-    String(value ?? "")
+  const $$ = (selector, parent = document) =>
+    Array.from(parent.querySelectorAll(selector));
+
+  const escapeHTML = value => {
+    return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  };
+
+  const pad = number =>
+    String(number).padStart(2, "0");
 
   const todayISO = () => {
     const date = new Date();
 
-    return `${date.getFullYear()}-${String(
+    return `${date.getFullYear()}-${pad(
       date.getMonth() + 1
-    ).padStart(2, "0")}-${String(
-      date.getDate()
-    ).padStart(2, "0")}`;
+    )}-${pad(date.getDate())}`;
   };
 
   const formatDate = value => {
@@ -38,15 +48,61 @@
     const date = new Date(`${value}T12:00:00`);
 
     if (Number.isNaN(date.getTime())) {
-      return value;
+      return String(value);
     }
 
     return new Intl.DateTimeFormat(undefined, {
-      weekday: "short",
       day: "numeric",
-      month: "short"
+      month: "short",
+      year: "numeric"
     }).format(date);
   };
+
+  const toast = message => {
+    if (typeof window.DeskOSToast === "function") {
+      window.DeskOSToast(message);
+      return;
+    }
+
+    let toastElement = $("#deskosToast");
+
+    if (!toastElement) {
+      toastElement = document.createElement("div");
+      toastElement.id = "deskosToast";
+
+      Object.assign(toastElement.style, {
+        position: "fixed",
+        left: "50%",
+        bottom: "28px",
+        transform: "translateX(-50%)",
+        padding: "10px 16px",
+        borderRadius: "10px",
+        background: "#20241f",
+        color: "#ffffff",
+        fontSize: "11px",
+        fontWeight: "700",
+        zIndex: "9999",
+        opacity: "0",
+        pointerEvents: "none",
+        transition: "opacity .2s ease"
+      });
+
+      document.body.appendChild(toastElement);
+    }
+
+    toastElement.textContent = message;
+    toastElement.style.opacity = "1";
+
+    clearTimeout(toastElement._timeout);
+
+    toastElement._timeout = setTimeout(() => {
+      toastElement.style.opacity = "0";
+    }, 1800);
+  };
+
+  // =========================================================
+  // VIEW / NAVIGATION
+  // =========================================================
 
   const getView = () => {
     const params = new URLSearchParams(
@@ -57,1662 +113,1515 @@
   };
 
   const navigate = view => {
-    window.location.href =
-      `hub.html?view=${encodeURIComponent(view)}`;
+    if (!view) return;
+
+    const url = new URL(
+      window.location.href
+    );
+
+    url.searchParams.set("view", view);
+
+    window.history.pushState(
+      {},
+      "",
+      url.toString()
+    );
+
+    updateActiveNavigation();
+    renderCurrentView();
   };
 
-  // =========================================================
-  // TOAST
-  // =========================================================
-
-  const toast = message => {
-    const element = $("#toast");
-
-    if (!element) {
-      console.log(message);
-      return;
+  window.addEventListener(
+    "popstate",
+    () => {
+      updateActiveNavigation();
+      renderCurrentView();
     }
-
-    element.textContent = message;
-    element.classList.add("show");
-
-    clearTimeout(window.DeskOSToastTimer);
-
-    window.DeskOSToastTimer = setTimeout(() => {
-      element.classList.remove("show");
-    }, 2500);
-  };
+  );
 
   // =========================================================
-  // CLOCK
-  // =========================================================
-
-  const updateClock = () => {
-    const dateElement = $("#todayDate");
-    const clockElement = $("#liveClock");
-
-    const now = new Date();
-
-    if (dateElement) {
-      dateElement.textContent =
-        new Intl.DateTimeFormat(undefined, {
-          weekday: "long",
-          day: "numeric",
-          month: "long"
-        }).format(now);
-    }
-
-    if (clockElement) {
-      clockElement.textContent =
-        new Intl.DateTimeFormat(undefined, {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit"
-        }).format(now);
-    }
-  };
-
-  updateClock();
-  setInterval(updateClock, 1000);
-
-  // =========================================================
-  // WORKSPACE
+  // WORKSPACE DISPLAY
   // =========================================================
 
   const updateWorkspaceDisplay = () => {
-    if (!window.DeskOSWorkspaces) return;
+    const profile = (() => {
+      try {
+        return JSON.parse(
+          localStorage.getItem(
+            "deskos-profile"
+          ) || "{}"
+        );
+      } catch {
+        return {};
+      }
+    })();
 
-    if (
-      typeof window.DeskOSWorkspaces.updateWorkspaceUI ===
-      "function"
-    ) {
-      window.DeskOSWorkspaces.updateWorkspaceUI();
+    const name =
+      profile.name ||
+      "Alex";
+
+    const avatar =
+      $(".profile .avatar");
+
+    if (avatar) {
+      avatar.textContent = name
+        .split(" ")
+        .map(part => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
     }
 
-    if (
-      typeof window.DeskOSWorkspaces.updateUI ===
-      "function"
-    ) {
-      window.DeskOSWorkspaces.updateUI();
+    const profileName =
+      $(".profile strong");
+
+    if (profileName) {
+      profileName.textContent = name;
     }
 
-    if (
-      typeof window.DeskOSWorkspaces.renderWorkspaceMenu ===
-      "function"
-    ) {
-      window.DeskOSWorkspaces.renderWorkspaceMenu();
+    const profileLocation =
+      $(".profile span");
+
+    if (profileLocation) {
+      profileLocation.textContent =
+        profile.location ||
+        "Sydney";
     }
   };
 
-/* =========================================================
-   TASKS
-   APPLE REMINDERS STYLE
-   ========================================================= */
-
-.tasks-page {
-  padding-bottom: 40px;
-}
-
-/* ---------------------------------------------------------
-   TASK APP
---------------------------------------------------------- */
-
-.tasks-app {
-  display: grid;
-  grid-template-columns: 330px minmax(0, 1fr);
-  min-height: 620px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 0 rgba(36, 40, 33, 0.008);
-}
-
-/* ---------------------------------------------------------
-   LEFT TASK LIST
---------------------------------------------------------- */
-
-.tasks-list-panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: #f8f8f5;
-  border-right: 1px solid var(--line);
-}
-
-/* Header */
-
-.tasks-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 20px 17px;
-  border-bottom: 1px solid var(--line);
-}
-
-.tasks-panel-header h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.6px;
-}
-
-.tasks-panel-header span {
-  display: block;
-  margin-top: 4px;
-  color: #979b93;
-  font-size: 10px;
-}
-
-/* Small + button */
-
-.tasks-add-small {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: white;
-  color: #5f665b;
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1;
-  transition: 0.18s ease;
-}
-
-.tasks-add-small:hover {
-  background: var(--lime);
-  border-color: var(--lime);
-  color: #263019;
-  transform: scale(1.04);
-}
-
-/* ---------------------------------------------------------
-   FILTERS
---------------------------------------------------------- */
-
-.task-filters {
-  display: grid;
-  gap: 3px;
-  padding: 13px 10px;
-  border-bottom: 1px solid var(--line);
-}
-
-.task-filter {
-  width: 100%;
-  min-height: 38px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 10px;
-  border-radius: 8px;
-  color: #73786f;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 650;
-  transition: 0.18s ease;
-}
-
-.task-filter:hover {
-  background: #eeeeea;
-  color: var(--ink);
-}
-
-.task-filter.active {
-  background: #e9eadf;
-  color: #20241f;
-  font-weight: 800;
-}
-
-.task-filter .filter-icon {
-  width: 18px;
-  color: #92988e;
-  font-size: 15px;
-  text-align: center;
-}
-
-.task-filter.active .filter-icon {
-  color: #68752e;
-}
-
-.task-filter b {
-  margin-left: auto;
-  min-width: 20px;
-  color: #999d96;
-  font-size: 10px;
-  font-weight: 700;
-  text-align: right;
-}
-
-/* ---------------------------------------------------------
-   TASK LIST
---------------------------------------------------------- */
-
-.task-list {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.task-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.task-list::-webkit-scrollbar-thumb {
-  background: #d7d8d1;
-  border-radius: 20px;
-}
-
-.task-list-item {
-  position: relative;
-  width: 100%;
-  min-height: 65px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 10px 12px;
-  margin-bottom: 4px;
-  border-radius: 10px;
-  background: transparent;
-  text-align: left;
-  transition: 0.18s ease;
-}
-
-.task-list-item:hover {
-  background: #eeeeea;
-}
-
-.task-list-item.selected {
-  background: white;
-  box-shadow:
-    0 1px 2px rgba(30, 35, 28, 0.04),
-    0 0 0 1px #e3e4dc;
-}
-
-.task-list-item.completed {
-  opacity: 0.62;
-}
-
-/* Checkbox */
-
-.task-list-check {
-  width: 19px;
-  height: 19px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid #9da29a;
-  border-radius: 50%;
-  background: white;
-  color: white;
-  font-size: 11px;
-  font-weight: 800;
-  transition: 0.18s ease;
-}
-
-.task-list-item.completed .task-list-check {
-  border-color: #b4cb3d;
-  background: #b4cb3d;
-  color: #263019;
-}
-
-.task-list-item.selected .task-list-check {
-  border-color: #8f9d43;
-}
-
-/* Task text */
-
-.task-list-content {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.task-list-content strong {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  color: #30342e;
-  font-size: 11px;
-  font-weight: 750;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.task-list-item.completed .task-list-content strong {
-  color: #969a92;
-  text-decoration: line-through;
-}
-
-.task-list-content small {
-  color: #a0a49c;
-  font-size: 9px;
-  line-height: 1.2;
-}
-
-/* ---------------------------------------------------------
-   EMPTY TASK LIST
---------------------------------------------------------- */
-
-.task-list-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  padding: 30px 20px;
-  color: #9b9f97;
-  text-align: center;
-}
-
-.task-list-empty > div {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 12px;
-  border: 1px solid #dfe0d9;
-  border-radius: 50%;
-  background: white;
-  color: #aab19b;
-  font-size: 18px;
-}
-
-.task-list-empty strong {
-  color: #60665d;
-  font-size: 12px;
-}
-
-.task-list-empty span {
-  margin-top: 5px;
-  font-size: 9px;
-}
-
-/* ---------------------------------------------------------
-   RIGHT DETAIL PANEL
---------------------------------------------------------- */
-
-.task-detail-panel {
-  min-width: 0;
-  background: #ffffff;
-}
-
-/* Empty detail */
-
-.task-detail-empty {
-  height: 100%;
-  min-height: 620px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-}
-
-.task-detail-empty-icon {
-  width: 58px;
-  height: 58px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 16px;
-  border: 1px solid #e0e2da;
-  border-radius: 50%;
-  background: #f7f8f2;
-  color: #9ca57b;
-  font-size: 22px;
-}
-
-.task-detail-empty h2 {
-  margin: 0;
-  color: #444940;
-  font-size: 16px;
-  letter-spacing: -0.4px;
-}
-
-.task-detail-empty p {
-  max-width: 300px;
-  margin: 8px 0 0;
-  color: #9a9e96;
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-/* ---------------------------------------------------------
-   DETAIL
---------------------------------------------------------- */
-
-.task-detail {
-  min-height: 620px;
-  padding: 28px 34px 34px;
-}
-
-/* Top row */
-
-.task-detail-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 25px;
-}
-
-.task-detail-check label {
-  position: relative;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.task-detail-check input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.task-detail-check label > span {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid #a4a9a0;
-  border-radius: 50%;
-  background: white;
-  transition: 0.18s ease;
-}
-
-.task-detail-check input:checked + span {
-  border-color: var(--lime-deep);
-  background: var(--lime);
-}
-
-.task-detail-check input:checked + span::after {
-  content: "✓";
-  color: #263019;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-/* Delete */
-
-.task-detail-delete {
-  padding: 6px 9px;
-  border-radius: 6px;
-  color: #c17b73;
-  font-size: 10px;
-  font-weight: 700;
-  transition: 0.18s ease;
-}
-
-.task-detail-delete:hover {
-  background: #f9e9e7;
-  color: #a85249;
-}
-
-/* ---------------------------------------------------------
-   TASK TITLE
---------------------------------------------------------- */
-
-.task-detail-title {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #20241f;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -1.2px;
-  line-height: 1.2;
-}
-
-.task-detail-title::placeholder {
-  color: #b6bab2;
-}
-
-.task-detail-title:focus {
-  box-shadow: none;
-}
-
-/* ---------------------------------------------------------
-   META
---------------------------------------------------------- */
-
-.task-detail-meta {
-  display: grid;
-  gap: 0;
-  margin-top: 27px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.task-detail-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-height: 62px;
-  border-bottom: 1px solid var(--line);
-}
-
-.task-detail-meta-row:last-child {
-  border-bottom: 0;
-}
-
-.task-meta-icon {
-  width: 29px;
-  height: 29px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: #f2f3ed;
-  color: #7f8964;
-  font-size: 14px;
-}
-
-.task-detail-meta-row div {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.task-detail-meta-row small {
-  color: #9a9e96;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.task-detail-meta-row strong {
-  color: #41463f;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-/* ---------------------------------------------------------
-   NOTES
---------------------------------------------------------- */
-
-.task-detail-section {
-  margin-top: 28px;
-}
-
-.task-detail-label {
-  margin: 0 0 10px;
-  color: #9a9e96;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1.3px;
-}
-
-.task-detail-notes {
-  width: 100%;
-  min-height: 170px;
-  resize: vertical;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  outline: none;
-  background: #fafaf7;
-  color: #4c5149;
-  font-size: 11px;
-  line-height: 1.7;
-  transition: 0.18s ease;
-}
-
-.task-detail-notes::placeholder {
-  color: #b2b6ae;
-}
-
-.task-detail-notes:focus {
-  border-color: #cbd39f;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(216, 242, 88, 0.12);
-}
-
-/* ---------------------------------------------------------
-   SAVE
---------------------------------------------------------- */
-
-.task-detail-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 18px;
-}
-
-.task-detail-actions .primary-button {
-  min-width: 105px;
-}
-
-/* ---------------------------------------------------------
-   COMPLETED TEXT
---------------------------------------------------------- */
-
-.completed-text {
-  color: #a1a59d;
-  text-decoration: line-through;
-}
-
-/* ---------------------------------------------------------
-   RESPONSIVE
---------------------------------------------------------- */
-
-@media (max-width: 1100px) {
-  .tasks-app {
-    grid-template-columns: 285px minmax(0, 1fr);
-  }
-
-  .task-detail {
-    padding: 24px;
-  }
-
-  .task-detail-title {
-    font-size: 24px;
-  }
-}
-// =========================================================
-// CALENDAR
-// APPLE CALENDAR STYLE
-// =========================================================
-
-let calendarMonth = new Date();
-calendarMonth.setDate(1);
-
-let selectedCalendarDate = todayISO();
-
-const renderCalendar = () => {
-  return `
-    <section class="page-section calendar-page">
-
-      <div class="page-heading">
-        <div>
-          <p class="eyebrow">SCHEDULE</p>
-          <h1>Calendar</h1>
-          <p class="page-description">
-            Plan your days and keep track of upcoming events.
+  // =========================================================
+  // TASKS
+  // APPLE REMINDERS STYLE
+  // =========================================================
+
+  let selectedTaskId =
+    sessionStorage.getItem(
+      "deskos-selected-task"
+    ) || "";
+
+  let taskFilter = "all";
+
+  const getFilteredTasks = () => {
+    const tasks =
+      [...(state.state.tasks || [])];
+
+    const today = todayISO();
+
+    if (taskFilter === "today") {
+      return tasks.filter(
+        task => task.date === today
+      );
+    }
+
+    if (taskFilter === "upcoming") {
+      return tasks.filter(
+        task =>
+          task.date &&
+          task.date >= today &&
+          !task.complete
+      );
+    }
+
+    if (taskFilter === "completed") {
+      return tasks.filter(
+        task => task.complete
+      );
+    }
+
+    return tasks;
+  };
+
+  const renderTaskDetail = task => {
+    if (!task) {
+      return `
+        <div class="task-detail-empty">
+          <div class="task-detail-empty-icon">✓</div>
+
+          <h2>Select a task</h2>
+
+          <p>
+            Choose a task from the list to view its details.
           </p>
         </div>
-
-        <button
-          type="button"
-          class="primary-button"
-          id="addEvent"
-        >
-          + New event
-        </button>
-      </div>
-
-      <div class="calendar-app">
-
-        <div class="calendar-header">
-
-          <div class="calendar-header-left">
-
-            <button
-              type="button"
-              class="calendar-today-button"
-              id="calendarToday"
-            >
-              Today
-            </button>
-
-            <div class="calendar-month-navigation">
-
-              <button
-                type="button"
-                class="calendar-arrow"
-                id="previousMonth"
-                aria-label="Previous month"
-              >
-                ‹
-              </button>
-
-              <button
-                type="button"
-                class="calendar-arrow"
-                id="nextMonth"
-                aria-label="Next month"
-              >
-                ›
-              </button>
-
-            </div>
-
-          </div>
-
-          <h2 id="calendarMonthTitle"></h2>
-
-        </div>
-
-
-        <!-- CALENDAR -->
-
-        <div class="calendar-frame">
-
-          <div class="calendar-weekdays">
-            <div>MON</div>
-            <div>TUE</div>
-            <div>WED</div>
-            <div>THU</div>
-            <div>FRI</div>
-            <div>SAT</div>
-            <div>SUN</div>
-          </div>
-
-          <div
-            id="bigCalendar"
-            class="calendar-grid"
-          ></div>
-
-        </div>
-
-      </div>
-
-
-      <!-- SELECTED DAY -->
-
-      <div class="calendar-selected-day">
-
-        <div class="selected-day-header">
-
-          <div>
-            <p class="eyebrow">SELECTED DAY</p>
-
-            <h2 id="selectedCalendarTitle">
-              ${escapeHTML(formatDate(selectedCalendarDate))}
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            class="text-action"
-            id="calendarAddTask"
-          >
-            + Task
-          </button>
-
-        </div>
-
-        <div
-          id="agendaList"
-          class="agenda-list"
-        ></div>
-
-      </div>
-
-    </section>
-  `;
-};
-
-
-const setupCalendar = () => {
-
-  const calendar = $(".calendar-page");
-
-  if (!calendar) return;
-
-
-  const grid =
-    $("#bigCalendar", calendar);
-
-  const title =
-    $("#calendarMonthTitle", calendar);
-
-  const previous =
-    $("#previousMonth", calendar);
-
-  const next =
-    $("#nextMonth", calendar);
-
-  const todayButton =
-    $("#calendarToday", calendar);
-
-  const agenda =
-    $("#agendaList", calendar);
-
-  const selectedTitle =
-    $("#selectedCalendarTitle", calendar);
-
-  const addEventButton =
-    $("#addEvent", calendar);
-
-  const addTaskButton =
-    $("#calendarAddTask", calendar);
-
-
-  if (!grid) return;
-
-
-  // ---------------------------------------------------------
-  // DATE HELPERS
-  // ---------------------------------------------------------
-
-  const pad = number =>
-    String(number).padStart(2, "0");
-
-
-  const toISO = date =>
-    `${date.getFullYear()}-${pad(
-      date.getMonth() + 1
-    )}-${pad(
-      date.getDate()
-    )}`;
-
-
-  const fromISO = value =>
-    new Date(`${value}T12:00:00`);
-
-
-  const monthLabel = date =>
-    new Intl.DateTimeFormat(
-      undefined,
-      {
-        month: "long",
-        year: "numeric"
-      }
-    ).format(date);
-
-
-  const dayLabel = value =>
-    new Intl.DateTimeFormat(
-      undefined,
-      {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      }
-    ).format(fromISO(value));
-
-
-  // ---------------------------------------------------------
-  // RENDER AGENDA
-  // ---------------------------------------------------------
-
-  const renderAgenda = () => {
-
-    const events =
-      (state.state.events || [])
-        .filter(event =>
-          event.date === selectedCalendarDate
-        )
-        .sort((a, b) =>
-          String(a.time || "")
-            .localeCompare(
-              String(b.time || "")
-            )
-        );
-
-
-    const tasks =
-      (state.state.tasks || [])
-        .filter(task =>
-          task.date === selectedCalendarDate
-        )
-        .sort((a, b) =>
-          String(a.due || "")
-            .localeCompare(
-              String(b.due || "")
-            )
-        );
-
-
-    if (selectedTitle) {
-      selectedTitle.textContent =
-        dayLabel(selectedCalendarDate);
-    }
-
-
-    if (
-      events.length === 0 &&
-      tasks.length === 0
-    ) {
-
-      agenda.innerHTML = `
-        <div class="calendar-empty-day">
-
-          <span class="calendar-empty-icon">
-            ○
-          </span>
-
-          <strong>
-            Nothing scheduled
-          </strong>
-
-          <small>
-            Your day is clear.
-          </small>
-
-        </div>
       `;
-
-      return;
     }
 
+    return `
+      <div class="task-detail">
 
-    let html = "";
+        <div class="task-detail-top">
 
+          <div class="task-detail-check">
+            <label>
+              <input
+                type="checkbox"
+                data-detail-task-toggle="${escapeHTML(task.id)}"
+                ${task.complete ? "checked" : ""}
+              >
 
-    // -------------------------------------------------------
-    // EVENTS
-    // -------------------------------------------------------
-
-    events.forEach(event => {
-
-      html += `
-        <div class="agenda-row">
-
-          <div class="agenda-time">
-            ${escapeHTML(
-              event.time || "All day"
-            )}
-          </div>
-
-          <div class="agenda-event-dot"></div>
-
-          <div class="agenda-content">
-
-            <strong>
-              ${escapeHTML(
-                event.title ||
-                "Untitled event"
-              )}
-            </strong>
-
-            <small>
-              ${escapeHTML(
-                event.detail ||
-                "DeskOS event"
-              )}
-            </small>
-
+              <span></span>
+            </label>
           </div>
 
           <button
             type="button"
-            class="danger-text"
-            data-calendar-delete-event="${escapeHTML(
-              event.id
-            )}"
+            class="task-detail-delete"
+            data-detail-task-delete="${escapeHTML(task.id)}"
           >
             Delete
           </button>
 
         </div>
-      `;
-    });
 
+        <input
+          type="text"
+          class="task-detail-title"
+          id="taskDetailTitle"
+          value="${escapeHTML(task.title || "")}"
+          placeholder="Task name"
+        >
 
-    // -------------------------------------------------------
-    // TASKS
-    // -------------------------------------------------------
+        <div class="task-detail-meta">
 
-    tasks.forEach(task => {
+          <div class="task-detail-meta-row">
 
-      html += `
-        <div class="agenda-row">
+            <span class="task-meta-icon">◷</span>
 
-          <div class="agenda-time">
-            TASK
+            <div>
+              <small>Due</small>
+
+              <strong>
+                ${
+                  task.date
+                    ? escapeHTML(
+                        formatDate(task.date)
+                      )
+                    : escapeHTML(
+                        task.due ||
+                        "No due date"
+                      )
+                }
+              </strong>
+            </div>
+
           </div>
 
-          <div class="agenda-task-dot"></div>
+          <div class="task-detail-meta-row">
 
-          <div class="agenda-content">
+            <span class="task-meta-icon">✓</span>
 
-            <strong class="${
-              task.complete
-                ? "completed-text"
-                : ""
-            }">
-              ${escapeHTML(
-                task.title ||
-                "Untitled task"
-              )}
-            </strong>
+            <div>
+              <small>Status</small>
 
-            <small>
-              ${
-                task.complete
-                  ? "Completed"
-                  : "Task"
-              }
-            </small>
+              <strong>
+                ${
+                  task.complete
+                    ? "Completed"
+                    : "Not completed"
+                }
+              </strong>
+            </div>
 
+          </div>
+
+        </div>
+
+        <div class="task-detail-section">
+
+          <p class="task-detail-label">
+            NOTES
+          </p>
+
+          <textarea
+            id="taskDetailNotes"
+            class="task-detail-notes"
+            placeholder="Add notes..."
+          >${escapeHTML(
+            task.description ||
+            task.notes ||
+            ""
+          )}</textarea>
+
+        </div>
+
+        <div class="task-detail-actions">
+
+          <button
+            type="button"
+            class="primary-button"
+            id="saveTaskDetail"
+            data-save-task="${escapeHTML(task.id)}"
+          >
+            Save task
+          </button>
+
+        </div>
+
+      </div>
+    `;
+  };
+
+  const renderTasks = () => {
+    const tasks =
+      [...(state.state.tasks || [])];
+
+    if (
+      !selectedTaskId ||
+      !tasks.some(
+        task =>
+          task.id === selectedTaskId
+      )
+    ) {
+      selectedTaskId =
+        tasks[0]?.id || "";
+    }
+
+    const selectedTask =
+      tasks.find(
+        task =>
+          task.id === selectedTaskId
+      ) || null;
+
+    const filteredTasks =
+      getFilteredTasks();
+
+    const incomplete =
+      tasks.filter(
+        task => !task.complete
+      );
+
+    const completed =
+      tasks.filter(
+        task => task.complete
+      );
+
+    const today =
+      tasks.filter(
+        task =>
+          task.date === todayISO()
+      );
+
+    return `
+      <section class="page-section tasks-page">
+
+        <div class="page-heading">
+
+          <div>
+            <p class="eyebrow">
+              PRODUCTIVITY
+            </p>
+
+            <h1>Tasks</h1>
+
+            <p class="page-description">
+              Keep track of everything you need to get done.
+            </p>
           </div>
 
           <button
             type="button"
-            class="calendar-task-toggle"
-            data-calendar-task="${escapeHTML(
-              task.id
-            )}"
+            class="primary-button"
+            id="addTaskButton"
           >
-            ${
-              task.complete
-                ? "Undo"
-                : "Done"
-            }
+            + New task
           </button>
 
         </div>
-      `;
-    });
 
+        <div class="tasks-app">
 
-    agenda.innerHTML = html;
-  };
+          <aside class="tasks-list-panel">
 
+            <div class="tasks-panel-header">
 
-  // ---------------------------------------------------------
-  // RENDER MONTH
-  // ---------------------------------------------------------
+              <div>
+                <h2>Tasks</h2>
 
-  const renderGrid = () => {
+                <span>
+                  ${incomplete.length} remaining
+                </span>
+              </div>
 
-    const year =
-      calendarMonth.getFullYear();
+              <button
+                type="button"
+                class="tasks-add-small"
+                id="addTaskSmall"
+              >
+                +
+              </button>
 
-    const month =
-      calendarMonth.getMonth();
+            </div>
 
+            <div class="task-filters">
 
-    const firstDay =
-      new Date(
-        year,
-        month,
-        1
-      );
+              <button
+                type="button"
+                class="task-filter ${
+                  taskFilter === "all"
+                    ? "active"
+                    : ""
+                }"
+                data-task-filter="all"
+              >
+                <span class="filter-icon">☰</span>
+                <span>All</span>
+                <b>${tasks.length}</b>
+              </button>
 
+              <button
+                type="button"
+                class="task-filter ${
+                  taskFilter === "today"
+                    ? "active"
+                    : ""
+                }"
+                data-task-filter="today"
+              >
+                <span class="filter-icon">◷</span>
+                <span>Today</span>
+                <b>${today.length}</b>
+              </button>
 
-    /*
-      JavaScript:
-      Sunday = 0
-      Monday = 1
-      Tuesday = 2
-      ...
+              <button
+                type="button"
+                class="task-filter ${
+                  taskFilter === "upcoming"
+                    ? "active"
+                    : ""
+                }"
+                data-task-filter="upcoming"
+              >
+                <span class="filter-icon">→</span>
+                <span>Upcoming</span>
+              </button>
 
-      Convert this so:
-      Monday = 0
-      Sunday = 6
-    */
+              <button
+                type="button"
+                class="task-filter ${
+                  taskFilter === "completed"
+                    ? "active"
+                    : ""
+                }"
+                data-task-filter="completed"
+              >
+                <span class="filter-icon">✓</span>
+                <span>Completed</span>
+                <b>${completed.length}</b>
+              </button>
 
-    const startingDay =
-      (firstDay.getDay() + 6) % 7;
+            </div>
 
+            <div class="task-list">
 
-    const daysInMonth =
-      new Date(
-        year,
-        month + 1,
-        0
-      ).getDate();
+              ${
+                filteredTasks.length
+                  ? filteredTasks
+                      .map(
+                        task => `
+                          <button
+                            type="button"
+                            class="task-list-item ${
+                              task.id ===
+                              selectedTask?.id
+                                ? "selected"
+                                : ""
+                            } ${
+                              task.complete
+                                ? "completed"
+                                : ""
+                            }"
+                            data-task-select="${escapeHTML(
+                              task.id
+                            )}"
+                          >
 
+                            <span class="task-list-check">
+                              ${
+                                task.complete
+                                  ? "✓"
+                                  : ""
+                              }
+                            </span>
 
-    const daysInPreviousMonth =
-      new Date(
-        year,
-        month,
-        0
-      ).getDate();
+                            <span class="task-list-content">
 
+                              <strong>
+                                ${escapeHTML(
+                                  task.title ||
+                                  "Untitled task"
+                                )}
+                              </strong>
 
-    const today =
-      todayISO();
+                              <small>
+                                ${
+                                  task.date
+                                    ? escapeHTML(
+                                        formatDate(
+                                          task.date
+                                        )
+                                      )
+                                    : escapeHTML(
+                                        task.due ||
+                                        "No due date"
+                                      )
+                                }
+                              </small>
 
+                            </span>
 
-    const events =
-      state.state.events || [];
+                          </button>
+                        `
+                      )
+                      .join("")
+                  : `
+                      <div class="task-list-empty">
 
+                        <div>✓</div>
 
-    const tasks =
-      state.state.tasks || [];
+                        <strong>
+                          No tasks
+                        </strong>
 
+                        <span>
+                          You're all caught up.
+                        </span>
 
-    // Month heading
+                      </div>
+                    `
+              }
 
-    if (title) {
-      title.textContent =
-        monthLabel(calendarMonth);
-    }
+            </div>
 
+          </aside>
 
-    let html = "";
+          <main class="task-detail-panel">
 
+            ${renderTaskDetail(
+              selectedTask
+            )}
 
-    // -------------------------------------------------------
-    // PREVIOUS MONTH DAYS
-    // -------------------------------------------------------
-
-    for (
-      let i = startingDay - 1;
-      i >= 0;
-      i--
-    ) {
-
-      const day =
-        daysInPreviousMonth - i;
-
-
-      html += `
-        <div class="calendar-day outside-month">
-
-          <div class="calendar-day-top">
-
-            <span class="calendar-day-number">
-              ${day}
-            </span>
-
-          </div>
+          </main>
 
         </div>
-      `;
-    }
 
-
-    // -------------------------------------------------------
-    // CURRENT MONTH
-    // -------------------------------------------------------
-
-    for (
-      let day = 1;
-      day <= daysInMonth;
-      day++
-    ) {
-
-      const date =
-        toISO(
-          new Date(
-            year,
-            month,
-            day
-          )
-        );
-
-
-      const dayEvents =
-        events.filter(event =>
-          event.date === date
-        );
-
-
-      const dayTasks =
-        tasks.filter(task =>
-          task.date === date
-        );
-
-
-      const isToday =
-        date === today;
-
-
-      const isSelected =
-        date === selectedCalendarDate;
-
-
-      const totalItems =
-        dayEvents.length +
-        dayTasks.length;
-
-
-      html += `
-        <button
-          type="button"
-          class="calendar-day ${
-            isToday
-              ? "today"
-              : ""
-          } ${
-            isSelected
-              ? "selected"
-              : ""
-          }"
-          data-calendar-date="${date}"
-        >
-
-          <div class="calendar-day-top">
-
-            <span class="calendar-day-number">
-              ${day}
-            </span>
-
-            ${
-              isToday
-                ? `
-                  <span class="calendar-today-dot"></span>
-                `
-                : ""
-            }
-
-          </div>
-
-
-          <div class="calendar-events">
-
-
-            ${
-              dayEvents
-                .slice(0, 3)
-                .map(event => `
-                  <div class="calendar-event-chip">
-
-                    <span class="event-chip-dot"></span>
-
-                    <span>
-                      ${escapeHTML(
-                        event.title ||
-                        "Event"
-                      )}
-                    </span>
-
-                  </div>
-                `)
-                .join("")
-            }
-
-
-            ${
-              dayTasks
-                .slice(0, 2)
-                .map(task => `
-                  <div class="calendar-task-chip ${
-                    task.complete
-                      ? "complete"
-                      : ""
-                  }">
-
-                    <span class="task-chip-check">
-                      ${
-                        task.complete
-                          ? "✓"
-                          : ""
-                      }
-                    </span>
-
-                    <span>
-                      ${escapeHTML(
-                        task.title ||
-                        "Task"
-                      )}
-                    </span>
-
-                  </div>
-                `)
-                .join("")
-            }
-
-
-            ${
-              totalItems > 5
-                ? `
-                  <div class="calendar-more">
-                    +${totalItems - 5} more
-                  </div>
-                `
-                : ""
-            }
-
-
-          </div>
-
-        </button>
-      `;
-    }
-
-
-    // -------------------------------------------------------
-    // NEXT MONTH DAYS
-    // -------------------------------------------------------
-
-    const totalDays =
-      startingDay +
-      daysInMonth;
-
-
-    const totalCells =
-      Math.ceil(totalDays / 7) * 7;
-
-
-    const remainingDays =
-      totalCells -
-      totalDays;
-
-
-    for (
-      let day = 1;
-      day <= remainingDays;
-      day++
-    ) {
-
-      html += `
-        <div class="calendar-day outside-month">
-
-          <div class="calendar-day-top">
-
-            <span class="calendar-day-number">
-              ${day}
-            </span>
-
-          </div>
-
-        </div>
-      `;
-    }
-
-
-    // Put ONLY the day cells inside the grid
-
-    grid.innerHTML = html;
-
-
-    // -------------------------------------------------------
-    // SELECT DAY
-    // -------------------------------------------------------
-
-    $$(
-      "[data-calendar-date]",
-      grid
-    ).forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          selectedCalendarDate =
-            button.dataset.calendarDate;
-
-
-          renderGrid();
-
-        }
-      );
-
-    });
-
-
-    renderAgenda();
+      </section>
+    `;
   };
 
+  const createTask = () => {
+    const title =
+      window.prompt(
+        "Task name",
+        "New task"
+      );
 
-  // ---------------------------------------------------------
-  // PREVIOUS MONTH
-  // ---------------------------------------------------------
+    if (!title?.trim()) return;
 
-  previous?.addEventListener(
-    "click",
-    () => {
+    const due =
+      window.prompt(
+        "Due time or label",
+        "Today"
+      ) || "Today";
 
-      calendarMonth =
-        new Date(
-          calendarMonth.getFullYear(),
-          calendarMonth.getMonth() - 1,
-          1
-        );
-
-
-      renderGrid();
-
-    }
-  );
-
-
-  // ---------------------------------------------------------
-  // NEXT MONTH
-  // ---------------------------------------------------------
-
-  next?.addEventListener(
-    "click",
-    () => {
-
-      calendarMonth =
-        new Date(
-          calendarMonth.getFullYear(),
-          calendarMonth.getMonth() + 1,
-          1
-        );
-
-
-      renderGrid();
-
-    }
-  );
-
-
-  // ---------------------------------------------------------
-  // TODAY
-  // ---------------------------------------------------------
-
-  todayButton?.addEventListener(
-    "click",
-    () => {
-
-      const today =
-        new Date();
-
-
-      calendarMonth =
-        new Date(
-          today.getFullYear(),
-          today.getMonth(),
-          1
-        );
-
-
-      selectedCalendarDate =
-        toISO(today);
-
-
-      renderGrid();
-
-    }
-  );
-
-
-  // ---------------------------------------------------------
-  // ADD EVENT
-  // ---------------------------------------------------------
-
-  addEventButton?.addEventListener(
-    "click",
-    () => {
-
-      const title =
-        window.prompt(
-          `Event for ${dayLabel(
-            selectedCalendarDate
-          )}`,
-          "New event"
-        );
-
-
-      if (!title?.trim()) return;
-
-
-      const time =
-        window.prompt(
-          "Time",
-          "10:00"
-        ) || "All day";
-
-
-      state.addEvent(
+    const task =
+      state.addTask(
         title.trim(),
-        selectedCalendarDate,
-        time.trim() || "All day",
-        "DeskOS event",
-        "coral"
+        due.trim()
       );
 
+    if (task) {
+      selectedTaskId =
+        task.id;
 
-      toast("Event created");
-
-
-      renderGrid();
-
+      sessionStorage.setItem(
+        "deskos-selected-task",
+        task.id
+      );
     }
-  );
 
+    toast("Task created");
 
-  // ---------------------------------------------------------
-  // ADD TASK
-  // ---------------------------------------------------------
+    renderCurrentView();
+  };
 
-  addTaskButton?.addEventListener(
-    "click",
-    () => {
+  const attachTaskEvents = () => {
+    $("#addTaskButton")
+      ?.addEventListener(
+        "click",
+        createTask
+      );
 
-      const title =
-        window.prompt(
-          `Task for ${dayLabel(
-            selectedCalendarDate
-          )}`,
-          "New task"
-        );
+    $("#addTaskSmall")
+      ?.addEventListener(
+        "click",
+        createTask
+      );
 
+    $$("[data-task-filter]")
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+            taskFilter =
+              button.dataset.taskFilter;
 
-      if (!title?.trim()) return;
-
-
-      const due =
-        window.prompt(
-          "Time or label",
-          "Today"
-        ) || "Today";
-
-
-      const task =
-        state.addTask(
-          title.trim(),
-          due.trim()
-        );
-
-
-      if (task) {
-
-        state.updateTask(
-          task.id,
-          {
-            date:
-              selectedCalendarDate
+            renderCurrentView();
           }
         );
+      });
 
+    $$("[data-task-select]")
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+            selectedTaskId =
+              button.dataset.taskSelect;
+
+            sessionStorage.setItem(
+              "deskos-selected-task",
+              selectedTaskId
+            );
+
+            renderCurrentView();
+          }
+        );
+      });
+
+    $$("[data-detail-task-toggle]")
+      .forEach(input => {
+        input.addEventListener(
+          "change",
+          () => {
+            const id =
+              input.dataset.detailTaskToggle;
+
+            const task =
+              (state.state.tasks || [])
+                .find(
+                  item =>
+                    item.id === id
+                );
+
+            if (!task) return;
+
+            state.updateTask(id, {
+              complete:
+                !task.complete
+            });
+
+            toast(
+              task.complete
+                ? "Task reopened"
+                : "Task completed"
+            );
+
+            renderCurrentView();
+          }
+        );
+      });
+
+    $$("[data-detail-task-delete]")
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+            const id =
+              button.dataset.detailTaskDelete;
+
+            const task =
+              (state.state.tasks || [])
+                .find(
+                  item =>
+                    item.id === id
+                );
+
+            if (!task) return;
+
+            if (
+              !window.confirm(
+                `Delete "${task.title}"?`
+              )
+            ) {
+              return;
+            }
+
+            state.deleteTask(id);
+
+            selectedTaskId = "";
+
+            sessionStorage.removeItem(
+              "deskos-selected-task"
+            );
+
+            toast("Task deleted");
+
+            renderCurrentView();
+          }
+        );
+      });
+
+    $("#saveTaskDetail")
+      ?.addEventListener(
+        "click",
+        () => {
+          const button =
+            $("#saveTaskDetail");
+
+          const id =
+            button?.dataset.saveTask;
+
+          if (!id) return;
+
+          const title =
+            $("#taskDetailTitle")
+              ?.value.trim() ||
+            "Untitled task";
+
+          const notes =
+            $("#taskDetailNotes")
+              ?.value || "";
+
+          state.updateTask(id, {
+            title,
+            description: notes,
+            notes
+          });
+
+          toast("Task saved");
+
+          renderCurrentView();
+        }
+      );
+  };
+
+  // =========================================================
+  // CALENDAR
+  // APPLE CALENDAR STYLE
+  // =========================================================
+
+  let calendarMonth =
+    new Date();
+
+  calendarMonth.setDate(1);
+
+  let selectedCalendarDate =
+    todayISO();
+
+  const renderCalendar = () => {
+    return `
+      <section class="page-section calendar-page">
+
+        <div class="page-heading">
+
+          <div>
+            <p class="eyebrow">
+              SCHEDULE
+            </p>
+
+            <h1>Calendar</h1>
+
+            <p class="page-description">
+              Plan your days and keep track of upcoming events.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="primary-button"
+            id="addEvent"
+          >
+            + New event
+          </button>
+
+        </div>
+
+        <div class="calendar-app">
+
+          <div class="calendar-header">
+
+            <div class="calendar-header-left">
+
+              <button
+                type="button"
+                class="calendar-today-button"
+                id="calendarToday"
+              >
+                Today
+              </button>
+
+              <div class="calendar-month-navigation">
+
+                <button
+                  type="button"
+                  class="calendar-arrow"
+                  id="previousMonth"
+                  aria-label="Previous month"
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  class="calendar-arrow"
+                  id="nextMonth"
+                  aria-label="Next month"
+                >
+                  ›
+                </button>
+
+              </div>
+
+            </div>
+
+            <h2 id="calendarMonthTitle"></h2>
+
+          </div>
+
+          <div class="calendar-frame">
+
+            <div class="calendar-weekdays">
+              <div>MON</div>
+              <div>TUE</div>
+              <div>WED</div>
+              <div>THU</div>
+              <div>FRI</div>
+              <div>SAT</div>
+              <div>SUN</div>
+            </div>
+
+            <div
+              id="bigCalendar"
+              class="calendar-grid"
+            ></div>
+
+          </div>
+
+        </div>
+
+        <div class="calendar-selected-day">
+
+          <div class="selected-day-header">
+
+            <div>
+              <p class="eyebrow">
+                SELECTED DAY
+              </p>
+
+              <h2 id="selectedCalendarTitle">
+                ${escapeHTML(
+                  formatDate(
+                    selectedCalendarDate
+                  )
+                )}
+              </h2>
+            </div>
+
+            <button
+              type="button"
+              class="text-action"
+              id="calendarAddTask"
+            >
+              + Task
+            </button>
+
+          </div>
+
+          <div
+            id="agendaList"
+            class="agenda-list"
+          ></div>
+
+        </div>
+
+      </section>
+    `;
+  };
+
+  const setupCalendar = () => {
+    const calendar =
+      $(".calendar-page");
+
+    if (!calendar) return;
+
+    const grid =
+      $("#bigCalendar", calendar);
+
+    const title =
+      $("#calendarMonthTitle", calendar);
+
+    const previous =
+      $("#previousMonth", calendar);
+
+    const next =
+      $("#nextMonth", calendar);
+
+    const todayButton =
+      $("#calendarToday", calendar);
+
+    const agenda =
+      $("#agendaList", calendar);
+
+    const selectedTitle =
+      $("#selectedCalendarTitle", calendar);
+
+    const addEventButton =
+      $("#addEvent", calendar);
+
+    const addTaskButton =
+      $("#calendarAddTask", calendar);
+
+    if (!grid) return;
+
+    const toISO = date =>
+      `${date.getFullYear()}-${pad(
+        date.getMonth() + 1
+      )}-${pad(date.getDate())}`;
+
+    const fromISO = value =>
+      new Date(`${value}T12:00:00`);
+
+    const monthLabel = date =>
+      new Intl.DateTimeFormat(
+        undefined,
+        {
+          month: "long",
+          year: "numeric"
+        }
+      ).format(date);
+
+    const dayLabel = value =>
+      new Intl.DateTimeFormat(
+        undefined,
+        {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        }
+      ).format(
+        fromISO(value)
+      );
+
+    const renderAgenda = () => {
+      const events =
+        (state.state.events || [])
+          .filter(
+            event =>
+              event.date ===
+              selectedCalendarDate
+          )
+          .sort(
+            (a, b) =>
+              String(a.time || "")
+                .localeCompare(
+                  String(b.time || "")
+                )
+          );
+
+      const tasks =
+        (state.state.tasks || [])
+          .filter(
+            task =>
+              task.date ===
+              selectedCalendarDate
+          )
+          .sort(
+            (a, b) =>
+              String(a.due || "")
+                .localeCompare(
+                  String(b.due || "")
+                )
+          );
+
+      if (selectedTitle) {
+        selectedTitle.textContent =
+          dayLabel(
+            selectedCalendarDate
+          );
       }
 
+      if (
+        events.length === 0 &&
+        tasks.length === 0
+      ) {
+        agenda.innerHTML = `
+          <div class="calendar-empty-day">
 
-      toast("Task created");
+            <span class="calendar-empty-icon">
+              ○
+            </span>
 
+            <strong>
+              Nothing scheduled
+            </strong>
 
-      renderGrid();
+            <small>
+              Your day is clear.
+            </small>
 
-    }
-  );
-
-
-  // ---------------------------------------------------------
-  // AGENDA ACTIONS
-  // ---------------------------------------------------------
-
-  agenda?.addEventListener(
-    "click",
-    event => {
-
-
-      // Delete event
-
-      const deleteButton =
-        event.target.closest(
-          "[data-calendar-delete-event]"
-        );
-
-
-      if (deleteButton) {
-
-        if (
-          !window.confirm(
-            "Delete this event?"
-          )
-        ) {
-          return;
-        }
-
-
-        state.deleteEvent(
-          deleteButton.dataset
-            .calendarDeleteEvent
-        );
-
-
-        toast("Event deleted");
-
-
-        renderGrid();
-
+          </div>
+        `;
 
         return;
       }
 
+      let html = "";
 
-      // Toggle task
+      events.forEach(event => {
+        html += `
+          <div class="agenda-row">
 
-      const taskButton =
-        event.target.closest(
-          "[data-calendar-task]"
+            <div class="agenda-time">
+              ${escapeHTML(
+                event.time ||
+                "All day"
+              )}
+            </div>
+
+            <div class="agenda-event-dot"></div>
+
+            <div class="agenda-content">
+
+              <strong>
+                ${escapeHTML(
+                  event.title ||
+                  "Untitled event"
+                )}
+              </strong>
+
+              <small>
+                ${escapeHTML(
+                  event.detail ||
+                  "DeskOS event"
+                )}
+              </small>
+
+            </div>
+
+            <button
+              type="button"
+              class="danger-text"
+              data-calendar-delete-event="${escapeHTML(
+                event.id
+              )}"
+            >
+              Delete
+            </button>
+
+          </div>
+        `;
+      });
+
+      tasks.forEach(task => {
+        html += `
+          <div class="agenda-row">
+
+            <div class="agenda-time">
+              TASK
+            </div>
+
+            <div class="agenda-task-dot"></div>
+
+            <div class="agenda-content">
+
+              <strong class="${
+                task.complete
+                  ? "completed-text"
+                  : ""
+              }">
+                ${escapeHTML(
+                  task.title ||
+                  "Untitled task"
+                )}
+              </strong>
+
+              <small>
+                ${
+                  task.complete
+                    ? "Completed"
+                    : "Task"
+                }
+              </small>
+
+            </div>
+
+            <button
+              type="button"
+              class="calendar-task-toggle"
+              data-calendar-task="${escapeHTML(
+                task.id
+              )}"
+            >
+              ${
+                task.complete
+                  ? "Undo"
+                  : "Done"
+              }
+            </button>
+
+          </div>
+        `;
+      });
+
+      agenda.innerHTML = html;
+    };
+
+    const renderGrid = () => {
+      const year =
+        calendarMonth.getFullYear();
+
+      const month =
+        calendarMonth.getMonth();
+
+      const firstDay =
+        new Date(
+          year,
+          month,
+          1
         );
 
+      const startingDay =
+        (firstDay.getDay() + 6) % 7;
 
-      if (taskButton) {
+      const daysInMonth =
+        new Date(
+          year,
+          month + 1,
+          0
+        ).getDate();
 
-        const id =
-          taskButton.dataset
-            .calendarTask;
+      const daysInPreviousMonth =
+        new Date(
+          year,
+          month,
+          0
+        ).getDate();
 
+      const today =
+        todayISO();
 
-        const task =
-          (state.state.tasks || [])
-            .find(item =>
-              item.id === id
-            );
+      const events =
+        state.state.events || [];
 
+      const tasks =
+        state.state.tasks || [];
 
-        if (!task) return;
-
-
-        state.updateTask(
-          id,
-          {
-            complete:
-              !task.complete
-          }
-        );
-
-
-        toast(
-          task.complete
-            ? "Task reopened"
-            : "Task completed"
-        );
-
-
-        renderGrid();
-
+      if (title) {
+        title.textContent =
+          monthLabel(
+            calendarMonth
+          );
       }
 
-    }
-  );
+      let html = "";
 
+      // Previous month
+      for (
+        let i = startingDay - 1;
+        i >= 0;
+        i--
+      ) {
+        const day =
+          daysInPreviousMonth - i;
 
-  // ---------------------------------------------------------
-  // INITIAL RENDER
-  // ---------------------------------------------------------
+        html += `
+          <div class="calendar-day outside-month">
 
-  renderGrid();
+            <div class="calendar-day-top">
+              <span class="calendar-day-number">
+                ${day}
+              </span>
+            </div>
 
-};
+          </div>
+        `;
+      }
+
+      // Current month
+      for (
+        let day = 1;
+        day <= daysInMonth;
+        day++
+      ) {
+        const date =
+          toISO(
+            new Date(
+              year,
+              month,
+              day
+            )
+          );
+
+        const dayEvents =
+          events.filter(
+            event =>
+              event.date === date
+          );
+
+        const dayTasks =
+          tasks.filter(
+            task =>
+              task.date === date
+          );
+
+        const isToday =
+          date === today;
+
+        const isSelected =
+          date ===
+          selectedCalendarDate;
+
+        const totalItems =
+          dayEvents.length +
+          dayTasks.length;
+
+        html += `
+          <button
+            type="button"
+            class="calendar-day ${
+              isToday
+                ? "today"
+                : ""
+            } ${
+              isSelected
+                ? "selected"
+                : ""
+            }"
+            data-calendar-date="${date}"
+          >
+
+            <div class="calendar-day-top">
+
+              <span class="calendar-day-number">
+                ${day}
+              </span>
+
+              ${
+                isToday
+                  ? `
+                    <span class="calendar-today-dot"></span>
+                  `
+                  : ""
+              }
+
+            </div>
+
+            <div class="calendar-events">
+
+              ${dayEvents
+                .slice(0, 3)
+                .map(
+                  event => `
+                    <div class="calendar-event-chip">
+
+                      <span class="event-chip-dot"></span>
+
+                      <span>
+                        ${escapeHTML(
+                          event.title ||
+                          "Event"
+                        )}
+                      </span>
+
+                    </div>
+                  `
+                )
+                .join("")}
+
+              ${dayTasks
+                .slice(0, 2)
+                .map(
+                  task => `
+                    <div class="calendar-task-chip ${
+                      task.complete
+                        ? "complete"
+                        : ""
+                    }">
+
+                      <span class="task-chip-check">
+                        ${
+                          task.complete
+                            ? "✓"
+                            : ""
+                        }
+                      </span>
+
+                      <span>
+                        ${escapeHTML(
+                          task.title ||
+                          "Task"
+                        )}
+                      </span>
+
+                    </div>
+                  `
+                )
+                .join("")}
+
+              ${
+                totalItems > 5
+                  ? `
+                    <div class="calendar-more">
+                      +${totalItems - 5} more
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+
+          </button>
+        `;
+      }
+
+      // Next month
+      const totalDays =
+        startingDay +
+        daysInMonth;
+
+      const totalCells =
+        Math.ceil(
+          totalDays / 7
+        ) * 7;
+
+      const remainingDays =
+        totalCells -
+        totalDays;
+
+      for (
+        let day = 1;
+        day <= remainingDays;
+        day++
+      ) {
+        html += `
+          <div class="calendar-day outside-month">
+
+            <div class="calendar-day-top">
+
+              <span class="calendar-day-number">
+                ${day}
+              </span>
+
+            </div>
+
+          </div>
+        `;
+      }
+
+      grid.innerHTML = html;
+
+      $$(
+        "[data-calendar-date]",
+        grid
+      ).forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+            selectedCalendarDate =
+              button.dataset.calendarDate;
+
+            renderGrid();
+          }
+        );
+      });
+
+      renderAgenda();
+    };
+
+    previous?.addEventListener(
+      "click",
+      () => {
+        calendarMonth =
+          new Date(
+            calendarMonth.getFullYear(),
+            calendarMonth.getMonth() - 1,
+            1
+          );
+
+        renderGrid();
+      }
+    );
+
+    next?.addEventListener(
+      "click",
+      () => {
+        calendarMonth =
+          new Date(
+            calendarMonth.getFullYear(),
+            calendarMonth.getMonth() + 1,
+            1
+          );
+
+        renderGrid();
+      }
+    );
+
+    todayButton?.addEventListener(
+      "click",
+      () => {
+        const today =
+          new Date();
+
+        calendarMonth =
+          new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            1
+          );
+
+        selectedCalendarDate =
+          toISO(today);
+
+        renderGrid();
+      }
+    );
+
+    addEventButton?.addEventListener(
+      "click",
+      () => {
+        const title =
+          window.prompt(
+            `Event for ${dayLabel(
+              selectedCalendarDate
+            )}`,
+            "New event"
+          );
+
+        if (!title?.trim()) return;
+
+        const time =
+          window.prompt(
+            "Time",
+            "10:00"
+          ) || "All day";
+
+        state.addEvent(
+          title.trim(),
+          selectedCalendarDate,
+          time.trim() ||
+            "All day",
+          "DeskOS event",
+          "coral"
+        );
+
+        toast("Event created");
+
+        renderGrid();
+      }
+    );
+
+    addTaskButton?.addEventListener(
+      "click",
+      () => {
+        const title =
+          window.prompt(
+            `Task for ${dayLabel(
+              selectedCalendarDate
+            )}`,
+            "New task"
+          );
+
+        if (!title?.trim()) return;
+
+        const due =
+          window.prompt(
+            "Time or label",
+            "Today"
+          ) || "Today";
+
+        const task =
+          state.addTask(
+            title.trim(),
+            due.trim()
+          );
+
+        if (task) {
+          state.updateTask(
+            task.id,
+            {
+              date:
+                selectedCalendarDate
+            }
+          );
+        }
+
+        toast("Task created");
+
+        renderGrid();
+      }
+    );
+
+    agenda?.addEventListener(
+      "click",
+      event => {
+        const deleteButton =
+          event.target.closest(
+            "[data-calendar-delete-event]"
+          );
+
+        if (deleteButton) {
+          if (
+            !window.confirm(
+              "Delete this event?"
+            )
+          ) {
+            return;
+          }
+
+          state.deleteEvent(
+            deleteButton.dataset
+              .calendarDeleteEvent
+          );
+
+          toast("Event deleted");
+
+          renderGrid();
+
+          return;
+        }
+
+        const taskButton =
+          event.target.closest(
+            "[data-calendar-task]"
+          );
+
+        if (taskButton) {
+          const id =
+            taskButton.dataset
+              .calendarTask;
+
+          const task =
+            (state.state.tasks || [])
+              .find(
+                item =>
+                  item.id === id
+              );
+
+          if (!task) return;
+
+          state.updateTask(
+            id,
+            {
+              complete:
+                !task.complete
+            }
+          );
+
+          toast(
+            task.complete
+              ? "Task reopened"
+              : "Task completed"
+          );
+
+          renderGrid();
+        }
+      }
+    );
+
+    renderGrid();
+  };
+
   // =========================================================
   // NOTES
   // APPLE NOTES STYLE
@@ -1731,7 +1640,8 @@ const setupCalendar = () => {
       !selectedNoteId ||
       !notes.some(
         note =>
-          note.id === selectedNoteId
+          note.id ===
+          selectedNoteId
       )
     ) {
       selectedNoteId =
@@ -1741,7 +1651,8 @@ const setupCalendar = () => {
     const selected =
       notes.find(
         note =>
-          note.id === selectedNoteId
+          note.id ===
+          selectedNoteId
       ) || null;
 
     const noteList =
@@ -1751,14 +1662,18 @@ const setupCalendar = () => {
             String(
               note.content || ""
             )
-              .replace(/\s+/g, " ")
+              .replace(
+                /\s+/g,
+                " "
+              )
               .trim();
 
           return `
             <button
               type="button"
               class="note-item ${
-                note.id === selected?.id
+                note.id ===
+                selected?.id
                   ? "active"
                   : ""
               }"
@@ -1804,7 +1719,9 @@ const setupCalendar = () => {
         <div class="page-heading">
 
           <div>
-            <p class="eyebrow">KNOWLEDGE</p>
+            <p class="eyebrow">
+              KNOWLEDGE
+            </p>
 
             <h1>Notes</h1>
 
@@ -1823,7 +1740,10 @@ const setupCalendar = () => {
 
               <div>
                 <h2>Notes</h2>
-                <span>${notes.length} notes</span>
+
+                <span>
+                  ${notes.length} notes
+                </span>
               </div>
 
               <button
@@ -1912,29 +1832,36 @@ const setupCalendar = () => {
                       id="noteTitle"
                       class="note-title-input"
                       value="${escapeHTML(
-                        selected.title || ""
+                        selected.title ||
+                        ""
                       )}"
                       placeholder="Title"
                     >
 
                     <div class="note-date">
+
                       ${
                         selected.updatedAt
                           ? new Intl.DateTimeFormat(
                               undefined,
                               {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric"
+                                weekday:
+                                  "long",
+                                day:
+                                  "numeric",
+                                month:
+                                  "long",
+                                year:
+                                  "numeric"
                               }
                             ).format(
-                                new Date(
-                                  selected.updatedAt
-                                )
+                              new Date(
+                                selected.updatedAt
                               )
+                            )
                           : "New note"
                       }
+
                     </div>
 
                     <textarea
@@ -1942,7 +1869,8 @@ const setupCalendar = () => {
                       class="note-content-input"
                       placeholder="Start writing..."
                     >${escapeHTML(
-                      selected.content || ""
+                      selected.content ||
+                      ""
                     )}</textarea>
 
                     <div class="note-editor-footer">
@@ -2025,23 +1953,26 @@ const setupCalendar = () => {
   };
 
   const attachNoteEvents = () => {
-    $("#newNote")?.addEventListener(
-      "click",
-      createNote
-    );
+    $("#newNote")
+      ?.addEventListener(
+        "click",
+        createNote
+      );
 
-    $("#emptyNewNote")?.addEventListener(
-      "click",
-      createNote
-    );
+    $("#emptyNewNote")
+      ?.addEventListener(
+        "click",
+        createNote
+      );
 
-    $$("[data-note-select]").forEach(
-      button => {
+    $$("[data-note-select]")
+      .forEach(button => {
         button.addEventListener(
           "click",
           () => {
             selectedNoteId =
-              button.dataset.noteSelect;
+              button.dataset
+                .noteSelect;
 
             sessionStorage.setItem(
               "deskos-selected-note",
@@ -2051,100 +1982,107 @@ const setupCalendar = () => {
             renderCurrentView();
           }
         );
-      }
-    );
+      });
 
-    $("#notesSearch")?.addEventListener(
-      "input",
-      event => {
-        const query =
-          event.target.value
-            .trim()
-            .toLowerCase();
+    $("#notesSearch")
+      ?.addEventListener(
+        "input",
+        event => {
+          const query =
+            event.target.value
+              .trim()
+              .toLowerCase();
 
-        $$(".note-item").forEach(
-          item => {
-            const text =
-              item.textContent
-                .toLowerCase();
+          $$(".note-item")
+            .forEach(item => {
+              const text =
+                item.textContent
+                  .toLowerCase();
 
-            item.style.display =
-              !query ||
-              text.includes(query)
-                ? ""
-                : "none";
-          }
-        );
-      }
-    );
-
-    $("#saveNote")?.addEventListener(
-      "click",
-      () => {
-        if (!selectedNoteId) return;
-
-        const title =
-          $("#noteTitle")?.value.trim() ||
-          "Untitled note";
-
-        const content =
-          $("#noteContent")?.value ||
-          "";
-
-        state.updateNote(
-          selectedNoteId,
-          {
-            title,
-            content,
-            updatedAt:
-              new Date().toISOString()
-          }
-        );
-
-        toast("Note saved");
-
-        renderCurrentView();
-      }
-    );
-
-    $("#deleteNote")?.addEventListener(
-      "click",
-      () => {
-        if (!selectedNoteId) return;
-
-        const note =
-          (state.state.notes || [])
-            .find(
-              item =>
-                item.id ===
-                selectedNoteId
-            );
-
-        if (!note) return;
-
-        if (
-          !window.confirm(
-            `Delete "${note.title}"?`
-          )
-        ) {
-          return;
+              item.style.display =
+                !query ||
+                text.includes(query)
+                  ? ""
+                  : "none";
+            });
         }
+      );
 
-        state.deleteNote(
-          selectedNoteId
-        );
+    $("#saveNote")
+      ?.addEventListener(
+        "click",
+        () => {
+          if (!selectedNoteId) {
+            return;
+          }
 
-        selectedNoteId = "";
+          const title =
+            $("#noteTitle")
+              ?.value.trim() ||
+            "Untitled note";
 
-        sessionStorage.removeItem(
-          "deskos-selected-note"
-        );
+          const content =
+            $("#noteContent")
+              ?.value || "";
 
-        toast("Note deleted");
+          state.updateNote(
+            selectedNoteId,
+            {
+              title,
+              content,
+              updatedAt:
+                new Date()
+                  .toISOString()
+            }
+          );
 
-        renderCurrentView();
-      }
-    );
+          toast("Note saved");
+
+          renderCurrentView();
+        }
+      );
+
+    $("#deleteNote")
+      ?.addEventListener(
+        "click",
+        () => {
+          if (!selectedNoteId) {
+            return;
+          }
+
+          const note =
+            (state.state.notes || [])
+              .find(
+                item =>
+                  item.id ===
+                  selectedNoteId
+              );
+
+          if (!note) return;
+
+          if (
+            !window.confirm(
+              `Delete "${note.title}"?`
+            )
+          ) {
+            return;
+          }
+
+          state.deleteNote(
+            selectedNoteId
+          );
+
+          selectedNoteId = "";
+
+          sessionStorage.removeItem(
+            "deskos-selected-note"
+          );
+
+          toast("Note deleted");
+
+          renderCurrentView();
+        }
+      );
   };
 
   // =========================================================
@@ -2161,7 +2099,9 @@ const setupCalendar = () => {
         <div class="page-heading">
 
           <div>
-            <p class="eyebrow">STORAGE</p>
+            <p class="eyebrow">
+              STORAGE
+            </p>
 
             <h1>Files</h1>
 
@@ -2204,99 +2144,101 @@ const setupCalendar = () => {
             ${
               files.length
                 ? files
-                    .map(file => `
-                      <div class="file-table-row">
+                    .map(
+                      file => `
+                        <div class="file-table-row">
 
-                        <span>
+                          <span>
 
-                          <i class="file-icon ${
-                            escapeHTML(
-                              file.kind ||
-                              "sky"
-                            )
-                          }">
-                            ▱
-                          </i>
+                            <i class="file-icon ${
+                              escapeHTML(
+                                file.kind ||
+                                "sky"
+                              )
+                            }">
+                              ▱
+                            </i>
 
-                          <b>
+                            <b>
+                              ${escapeHTML(
+                                file.name ||
+                                file.title ||
+                                "Untitled file"
+                              )}
+                            </b>
+
+                          </span>
+
+                          <span>
                             ${escapeHTML(
-                              file.name ||
-                              file.title ||
-                              "Untitled file"
+                              file.source ||
+                              "DeskOS"
                             )}
-                          </b>
+                          </span>
 
-                        </span>
-
-                        <span>
-                          ${escapeHTML(
-                            file.source ||
-                            "DeskOS"
-                          )}
-                        </span>
-
-                        <span>
-                          ${
-                            file.size
-                              ? escapeHTML(
-                                  String(
-                                    file.size
+                          <span>
+                            ${
+                              file.size
+                                ? escapeHTML(
+                                    String(
+                                      file.size
+                                    )
                                   )
-                                )
-                              : "Local"
-                          }
-                        </span>
+                                : "Local"
+                            }
+                          </span>
 
-                        <span class="file-actions">
+                          <span class="file-actions">
 
-                          ${
-                            file.id
-                              ? `
-                                <button
-                                  type="button"
-                                  class="file-open-button"
-                                  data-cloud-file="${escapeHTML(
-                                    file.id
-                                  )}"
-                                >
-                                  Open
-                                </button>
+                            ${
+                              file.id
+                                ? `
+                                  <button
+                                    type="button"
+                                    class="file-open-button"
+                                    data-cloud-file="${escapeHTML(
+                                      file.id
+                                    )}"
+                                  >
+                                    Open
+                                  </button>
 
-                                <button
-                                  type="button"
-                                  class="file-delete-button"
-                                  data-delete-file="${escapeHTML(
-                                    file.id
-                                  )}"
-                                >
-                                  Delete
-                                </button>
-                              `
-                              : ""
-                          }
+                                  <button
+                                    type="button"
+                                    class="file-delete-button"
+                                    data-delete-file="${escapeHTML(
+                                      file.id
+                                    )}"
+                                  >
+                                    Delete
+                                  </button>
+                                `
+                                : ""
+                            }
 
-                        </span>
+                          </span>
 
-                      </div>
-                    `)
+                        </div>
+                      `
+                    )
                     .join("")
                 : `
-                  <div class="empty-state">
+                    <div class="empty-state">
 
-                    <div class="empty-icon">
-                      📁
+                      <div class="empty-icon">
+                        📁
+                      </div>
+
+                      <h3>
+                        No files yet
+                      </h3>
+
+                      <p>
+                        Upload a file to see it here.
+                      </p>
+
                     </div>
-
-                    <h3>
-                      No files yet
-                    </h3>
-
-                    <p>
-                      Upload a file to see it here.
-                    </p>
-
-                  </div>
-                `
+                  `
             }
 
           </div>
@@ -2317,9 +2259,13 @@ const setupCalendar = () => {
       <div class="page-heading">
 
         <div>
-          <p class="eyebrow">FIND</p>
+          <p class="eyebrow">
+            FIND
+          </p>
 
-          <h1>Search DeskOS</h1>
+          <h1>
+            Search DeskOS
+          </h1>
 
           <p class="page-description">
             Search across your tasks, notes, files and events.
@@ -2342,6 +2288,7 @@ const setupCalendar = () => {
           id="searchResults"
           class="search-results"
         >
+
           <div class="empty-state">
 
             <div class="empty-icon">
@@ -2357,6 +2304,7 @@ const setupCalendar = () => {
             </p>
 
           </div>
+
         </div>
 
       </div>
@@ -2371,7 +2319,9 @@ const setupCalendar = () => {
     const results =
       $("#searchResults");
 
-    if (!input || !results) return;
+    if (!input || !results) {
+      return;
+    }
 
     const performSearch = () => {
       const query =
@@ -2406,13 +2356,17 @@ const setupCalendar = () => {
       (state.state.tasks || [])
         .forEach(task => {
           if (
-            String(task.title || "")
+            String(
+              task.title || ""
+            )
               .toLowerCase()
               .includes(query)
           ) {
             matches.push({
               type: "Task",
-              title: task.title,
+              title:
+                task.title ||
+                "Untitled task",
               description:
                 task.complete
                   ? "Completed task"
@@ -2424,12 +2378,15 @@ const setupCalendar = () => {
 
       (state.state.notes || [])
         .forEach(note => {
-          if (
+          const searchable =
             `${note.title || ""} ${
               note.content || ""
-            }`
-              .toLowerCase()
-              .includes(query)
+            }`.toLowerCase();
+
+          if (
+            searchable.includes(
+              query
+            )
           ) {
             matches.push({
               type: "Note",
@@ -2469,19 +2426,25 @@ const setupCalendar = () => {
 
       (state.state.events || [])
         .forEach(event => {
-          if (
+          const searchable =
             `${event.title || ""} ${
               event.detail || ""
-            }`
-              .toLowerCase()
-              .includes(query)
+            }`.toLowerCase();
+
+          if (
+            searchable.includes(
+              query
+            )
           ) {
             matches.push({
               type: "Event",
-              title: event.title,
+              title:
+                event.title ||
+                "Untitled event",
               description:
                 event.detail ||
-                event.date,
+                event.date ||
+                "Event",
               action: "calendar"
             });
           }
@@ -2513,35 +2476,37 @@ const setupCalendar = () => {
 
       results.innerHTML =
         matches
-          .map(match => `
-            <button
-              type="button"
-              class="search-result"
-              data-search-action="${escapeHTML(
-                match.action
-              )}"
-            >
+          .map(
+            match => `
+              <button
+                type="button"
+                class="search-result"
+                data-search-action="${escapeHTML(
+                  match.action
+                )}"
+              >
 
-              <span class="search-result-type">
-                ${escapeHTML(
-                  match.type
-                )}
-              </span>
+                <span class="search-result-type">
+                  ${escapeHTML(
+                    match.type
+                  )}
+                </span>
 
-              <strong>
-                ${escapeHTML(
-                  match.title
-                )}
-              </strong>
+                <strong>
+                  ${escapeHTML(
+                    match.title
+                  )}
+                </strong>
 
-              <small>
-                ${escapeHTML(
-                  match.description
-                )}
-              </small>
+                <small>
+                  ${escapeHTML(
+                    match.description
+                  )}
+                </small>
 
-            </button>
-          `)
+              </button>
+            `
+          )
           .join("");
 
       $$("[data-search-action]")
@@ -2550,7 +2515,8 @@ const setupCalendar = () => {
             "click",
             () => {
               navigate(
-                button.dataset.searchAction
+                button.dataset
+                  .searchAction
               );
             }
           );
@@ -2595,9 +2561,13 @@ const setupCalendar = () => {
         <div class="page-heading">
 
           <div>
-            <p class="eyebrow">UPDATES</p>
+            <p class="eyebrow">
+              UPDATES
+            </p>
 
-            <h1>Notifications</h1>
+            <h1>
+              Notifications
+            </h1>
 
             <p class="page-description">
               Stay up to date with what needs your attention.
@@ -2622,6 +2592,7 @@ const setupCalendar = () => {
                           </div>
 
                           <div>
+
                             <strong>
                               Overdue task
                             </strong>
@@ -2631,6 +2602,7 @@ const setupCalendar = () => {
                                 task.title
                               )}
                             </p>
+
                           </div>
 
                         </div>
@@ -2653,6 +2625,7 @@ const setupCalendar = () => {
                           </div>
 
                           <div>
+
                             <strong>
                               Upcoming event
                             </strong>
@@ -2668,6 +2641,7 @@ const setupCalendar = () => {
                                 )
                               )}
                             </p>
+
                           </div>
 
                         </div>
@@ -2681,22 +2655,22 @@ const setupCalendar = () => {
               !overdue.length &&
               !upcoming.length
                 ? `
-                  <div class="empty-state">
+                    <div class="empty-state">
 
-                    <div class="empty-icon">
-                      ✓
+                      <div class="empty-icon">
+                        ✓
+                      </div>
+
+                      <h3>
+                        You're all caught up
+                      </h3>
+
+                      <p>
+                        There are no new notifications.
+                      </p>
+
                     </div>
-
-                    <h3>
-                      You're all caught up
-                    </h3>
-
-                    <p>
-                      There are no new notifications.
-                    </p>
-
-                  </div>
-                `
+                  `
                 : ""
             }
 
@@ -2718,7 +2692,9 @@ const setupCalendar = () => {
       <div class="page-heading">
 
         <div>
-          <p class="eyebrow">CREATE</p>
+          <p class="eyebrow">
+            CREATE
+          </p>
 
           <h1>New</h1>
 
@@ -2737,7 +2713,11 @@ const setupCalendar = () => {
           data-new-type="task"
         >
           <span>✓</span>
-          <strong>New task</strong>
+
+          <strong>
+            New task
+          </strong>
+
           <small>
             Create something you need to get done.
           </small>
@@ -2749,7 +2729,11 @@ const setupCalendar = () => {
           data-new-type="note"
         >
           <span>✎</span>
-          <strong>New note</strong>
+
+          <strong>
+            New note
+          </strong>
+
           <small>
             Capture an idea or piece of information.
           </small>
@@ -2761,7 +2745,11 @@ const setupCalendar = () => {
           data-new-type="event"
         >
           <span>▦</span>
-          <strong>New event</strong>
+
+          <strong>
+            New event
+          </strong>
+
           <small>
             Add something to your calendar.
           </small>
@@ -2773,7 +2761,11 @@ const setupCalendar = () => {
           data-new-type="file"
         >
           <span>📁</span>
-          <strong>Upload file</strong>
+
+          <strong>
+            Upload file
+          </strong>
+
           <small>
             Store a file in your DeskOS workspace.
           </small>
@@ -2811,7 +2803,9 @@ const setupCalendar = () => {
                   "New event"
                 );
 
-              if (!title?.trim()) return;
+              if (!title?.trim()) {
+                return;
+              }
 
               const date =
                 window.prompt(
@@ -2854,11 +2848,13 @@ const setupCalendar = () => {
 
   const getLocalProfile = () => {
     try {
-      return JSON.parse(
-        localStorage.getItem(
-          "deskos-profile"
-        ) || "null"
-      ) || {};
+      return (
+        JSON.parse(
+          localStorage.getItem(
+            "deskos-profile"
+          ) || "null"
+        ) || {}
+      );
     } catch {
       return {};
     }
@@ -2886,7 +2882,10 @@ const setupCalendar = () => {
         <div class="page-heading">
 
           <div>
-            <p class="eyebrow">ACCOUNT</p>
+
+            <p class="eyebrow">
+              ACCOUNT
+            </p>
 
             <h1>
               Profile & Settings
@@ -2895,6 +2894,7 @@ const setupCalendar = () => {
             <p class="page-description">
               Manage your DeskOS profile and preferences.
             </p>
+
           </div>
 
         </div>
@@ -2910,7 +2910,7 @@ const setupCalendar = () => {
                   .split(" ")
                   .map(
                     part =>
-                      part[0]
+                      part[0] || ""
                   )
                   .join("")
                   .slice(0, 2)
@@ -2920,13 +2920,17 @@ const setupCalendar = () => {
             </div>
 
             <div>
+
               <h2>
                 ${escapeHTML(name)}
               </h2>
 
               <p>
-                ${escapeHTML(location)}
+                ${escapeHTML(
+                  location
+                )}
               </p>
+
             </div>
 
           </div>
@@ -2934,23 +2938,35 @@ const setupCalendar = () => {
           <div class="form-grid">
 
             <label>
-              <span>Name</span>
+
+              <span>
+                Name
+              </span>
 
               <input
                 id="profileName"
                 type="text"
-                value="${escapeHTML(name)}"
+                value="${escapeHTML(
+                  name
+                )}"
               >
+
             </label>
 
             <label>
-              <span>Location</span>
+
+              <span>
+                Location
+              </span>
 
               <input
                 id="profileLocation"
                 type="text"
-                value="${escapeHTML(location)}"
+                value="${escapeHTML(
+                  location
+                )}"
               >
+
             </label>
 
           </div>
@@ -2958,11 +2974,15 @@ const setupCalendar = () => {
           <div class="profile-setting">
 
             <div>
-              <strong>Theme</strong>
+
+              <strong>
+                Theme
+              </strong>
 
               <p>
                 Choose your DeskOS accent theme.
               </p>
+
             </div>
 
             <div class="theme-options">
@@ -3032,11 +3052,10 @@ const setupCalendar = () => {
           "click",
           () => {
             $$("[data-theme]")
-              .forEach(
-                item =>
-                  item.classList.remove(
-                    "selected"
-                  )
+              .forEach(item =>
+                item.classList.remove(
+                  "selected"
+                )
               );
 
             button.classList.add(
@@ -3080,7 +3099,8 @@ const setupCalendar = () => {
           ...current,
           name,
           location,
-          theme: selectedTheme
+          theme:
+            selectedTheme
         };
 
         localStorage.setItem(
@@ -3091,9 +3111,11 @@ const setupCalendar = () => {
         if (
           window.DeskOSProfile &&
           typeof window.DeskOSProfile.save ===
-          "function"
+            "function"
         ) {
-          saveButton.disabled = true;
+          saveButton.disabled =
+            true;
+
           saveButton.textContent =
             "Saving…";
 
@@ -3102,7 +3124,9 @@ const setupCalendar = () => {
               profile
             );
 
-          saveButton.disabled = false;
+          saveButton.disabled =
+            false;
+
           saveButton.textContent =
             "Save changes";
 
@@ -3114,6 +3138,8 @@ const setupCalendar = () => {
             return;
           }
         }
+
+        updateWorkspaceDisplay();
 
         toast("Profile saved");
       }
@@ -3130,13 +3156,17 @@ const setupCalendar = () => {
       <div class="page-heading">
 
         <div>
-          <p class="eyebrow">SUPPORT</p>
+
+          <p class="eyebrow">
+            SUPPORT
+          </p>
 
           <h1>Help</h1>
 
           <p class="page-description">
             Learn how to use DeskOS.
           </p>
+
         </div>
 
       </div>
@@ -3145,7 +3175,9 @@ const setupCalendar = () => {
 
         <div class="content-card">
 
-          <h2>Getting started</h2>
+          <h2>
+            Getting started
+          </h2>
 
           <p>
             Use the sidebar to move between Tasks,
@@ -3156,25 +3188,33 @@ const setupCalendar = () => {
 
         <div class="content-card">
 
-          <h2>Keyboard shortcuts</h2>
+          <h2>
+            Keyboard shortcuts
+          </h2>
 
           <div class="shortcut-row">
+
             <kbd>Ctrl</kbd>
             <span>+</span>
             <kbd>K</kbd>
             <span>Search</span>
+
           </div>
 
           <div class="shortcut-row">
+
             <kbd>?</kbd>
             <span>Open help</span>
+
           </div>
 
         </div>
 
         <div class="content-card">
 
-          <h2>Plans</h2>
+          <h2>
+            Plans
+          </h2>
 
           <p>
             DeskOS has Free, Plus, Pro and Team plans.
@@ -3234,15 +3274,21 @@ const setupCalendar = () => {
         <div class="page-heading">
 
           <div>
-            <p class="eyebrow">PINNED</p>
+
+            <p class="eyebrow">
+              PINNED
+            </p>
 
             <h1>
               ${escapeHTML(title)}
             </h1>
 
             <p class="page-description">
-              ${escapeHTML(description)}
+              ${escapeHTML(
+                description
+              )}
             </p>
+
           </div>
 
         </div>
@@ -3261,7 +3307,9 @@ const setupCalendar = () => {
           </h2>
 
           <p>
-            ${escapeHTML(description)}
+            ${escapeHTML(
+              description
+            )}
           </p>
 
         </div>
@@ -3293,13 +3341,19 @@ const setupCalendar = () => {
         <div class="page-heading">
 
           <div>
-            <p class="eyebrow">DESKOS</p>
 
-            <h1>Overview</h1>
+            <p class="eyebrow">
+              DESKOS
+            </p>
+
+            <h1>
+              Overview
+            </h1>
 
             <p class="page-description">
               Welcome back to your workspace.
             </p>
+
           </div>
 
         </div>
@@ -3307,6 +3361,7 @@ const setupCalendar = () => {
         <div class="stats-grid">
 
           <div class="stat-card">
+
             <strong>
               ${
                 tasks.filter(
@@ -3319,6 +3374,7 @@ const setupCalendar = () => {
             <span>
               Open tasks
             </span>
+
           </div>
 
           <div class="stat-card">
@@ -3385,34 +3441,41 @@ const setupCalendar = () => {
     switch (view) {
 
       case "tasks":
+
         container.innerHTML =
           renderTasks();
 
         attachTaskEvents();
+
         break;
 
       case "calendar":
+
         container.innerHTML =
           renderCalendar();
 
         setupCalendar();
+
         break;
 
       case "notes":
+
         container.innerHTML =
           renderNotes();
 
         attachNoteEvents();
+
         break;
 
       case "files":
+
         container.innerHTML =
           renderFiles();
 
         if (
           window.DeskOSCloud &&
           typeof window.DeskOSCloud.renderFiles ===
-          "function"
+            "function"
         ) {
           window.DeskOSCloud.renderFiles();
         }
@@ -3420,54 +3483,66 @@ const setupCalendar = () => {
         break;
 
       case "search":
+
         container.innerHTML =
           renderSearch();
 
         attachSearch();
+
         break;
 
       case "notifications":
+
         container.innerHTML =
           renderNotifications();
 
         break;
 
       case "new":
+
         container.innerHTML =
           renderNew();
 
         attachNewEvents();
+
         break;
 
       case "profile":
+
         container.innerHTML =
           renderProfile();
 
         attachProfileEvents();
+
         break;
 
       case "help":
+
         container.innerHTML =
           renderHelp();
 
         attachHelpEvents();
+
         break;
 
       case "product":
       case "personal":
       case "reading":
+
         container.innerHTML =
           renderPinned(view);
 
         break;
 
       default:
+
         container.innerHTML =
           renderOverview();
 
         break;
     }
 
+    updateActiveNavigation();
     updateWorkspaceDisplay();
   };
 
@@ -3502,7 +3577,8 @@ const setupCalendar = () => {
       .forEach(item => {
         item.classList.toggle(
           "active",
-          item.dataset.nav === view
+          item.dataset.nav ===
+            view
         );
       });
   };
@@ -3515,10 +3591,12 @@ const setupCalendar = () => {
     document.addEventListener(
       "keydown",
       event => {
+
         if (
           (event.ctrlKey ||
             event.metaKey) &&
-          event.key.toLowerCase() === "k"
+          event.key.toLowerCase() ===
+            "k"
         ) {
           event.preventDefault();
 
@@ -3535,6 +3613,7 @@ const setupCalendar = () => {
 
           navigate("help");
         }
+
       }
     );
   };
@@ -3548,7 +3627,9 @@ const setupCalendar = () => {
     window.addEventListener(
       "deskos:cloudtasksloaded",
       () => {
-        if (getView() === "tasks") {
+        if (
+          getView() === "tasks"
+        ) {
           renderCurrentView();
         }
       }
@@ -3557,7 +3638,9 @@ const setupCalendar = () => {
     window.addEventListener(
       "deskos:cloudnotesloaded",
       () => {
-        if (getView() === "notes") {
+        if (
+          getView() === "notes"
+        ) {
           renderCurrentView();
         }
       }
@@ -3578,11 +3661,13 @@ const setupCalendar = () => {
     window.addEventListener(
       "deskos:cloudfilesloaded",
       () => {
-        if (getView() === "files") {
+        if (
+          getView() === "files"
+        ) {
           if (
             typeof window.DeskOSCloud
               ?.renderFiles ===
-            "function"
+              "function"
           ) {
             window.DeskOSCloud.renderFiles();
           }
@@ -3593,13 +3678,17 @@ const setupCalendar = () => {
     window.addEventListener(
       "deskos:profileloaded",
       () => {
-        if (getView() === "profile") {
+
+        if (
+          getView() === "profile"
+        ) {
           renderCurrentView();
         }
 
         updateWorkspaceDisplay();
       }
     );
+
   };
 
   // =========================================================
@@ -3634,11 +3723,13 @@ const setupCalendar = () => {
           getView() === "files" &&
           window.DeskOSCloud &&
           typeof window.DeskOSCloud.loadFiles ===
-          "function"
+            "function"
         ) {
           window.DeskOSCloud
             .loadFiles()
-            .catch(() => {});
+            .catch(
+              () => {}
+            );
         }
       },
       800
@@ -3650,11 +3741,19 @@ const setupCalendar = () => {
   // =========================================================
 
   window.DeskOSHub = {
-    render: renderCurrentView,
+    render:
+      renderCurrentView,
+
     navigate,
+
     toast,
+
     getView
   };
+
+  // =========================================================
+  // START
+  // =========================================================
 
   if (
     document.readyState ===
