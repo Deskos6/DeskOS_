@@ -1,4 +1,3 @@
-```javascript
 (() => {
   "use strict";
 
@@ -12,15 +11,16 @@
 
   const BUCKET = "deskos-files";
 
-  // -----------------------------------------
-  // Helpers
-  // -----------------------------------------
+  // =========================================================
+  // HELPERS
+  // =========================================================
 
   const fileKind = (mime) => {
     const type = String(mime || "").toLowerCase();
 
     if (type.startsWith("image/")) return "pink";
     if (type.includes("pdf")) return "coral";
+
     if (
       type.includes("word") ||
       type.includes("document") ||
@@ -94,9 +94,30 @@
     }
   };
 
-  // -----------------------------------------
-  // Cloud connection
-  // -----------------------------------------
+  // =========================================================
+  // TOAST
+  // =========================================================
+
+  const showToast = (message) => {
+    const toast = document.querySelector("#toast");
+
+    if (!toast) {
+      return;
+    }
+
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    clearTimeout(showToast.timer);
+
+    showToast.timer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2500);
+  };
+
+  // =========================================================
+  // CLOUD CONNECTION
+  // =========================================================
 
   const getCloud = async () => {
     if (!cloud) {
@@ -125,9 +146,9 @@
     }
   };
 
-  // -----------------------------------------
-  // Render files
-  // -----------------------------------------
+  // =========================================================
+  // RENDER FILES
+  // =========================================================
 
   const renderCloudFiles = () => {
     const table = document.querySelector(".file-table");
@@ -137,8 +158,13 @@
     }
 
     const files = [...getFiles()].sort((a, b) => {
-      const dateA = new Date(a.updatedAt || a.openedAt || 0).getTime();
-      const dateB = new Date(b.updatedAt || b.openedAt || 0).getTime();
+      const dateA = new Date(
+        a.updatedAt || a.openedAt || 0
+      ).getTime();
+
+      const dateB = new Date(
+        b.updatedAt || b.openedAt || 0
+      ).getTime();
 
       return dateB - dateA;
     });
@@ -163,7 +189,10 @@
       </div>
 
       ${files.map((file) => {
-        const opened = file.openedAt || file.updatedAt || Date.now();
+        const opened =
+          file.openedAt ||
+          file.updatedAt ||
+          Date.now();
 
         return `
           <div
@@ -171,17 +200,26 @@
             data-cloud-file="${safe(file.id)}"
           >
             <span>
-              <i class="file-icon ${safe(file.kind || fileKind(file.mimeType))}">
+              <i class="file-icon ${safe(
+                file.kind ||
+                fileKind(file.mimeType)
+              )}">
                 ▱
               </i>
 
               <b>
-                ${safe(file.name || "Untitled file")}
+                ${safe(
+                  file.name ||
+                  "Untitled file"
+                )}
               </b>
             </span>
 
             <span>
-              ${safe(file.source || "DeskOS")}
+              ${safe(
+                file.source ||
+                "DeskOS"
+              )}
             </span>
 
             <span>
@@ -207,6 +245,7 @@
             </span>
 
             <span class="file-actions">
+
               <button
                 type="button"
                 class="file-open-button"
@@ -222,6 +261,7 @@
               >
                 Delete
               </button>
+
             </span>
           </div>
         `;
@@ -229,12 +269,14 @@
     `;
   };
 
-  // -----------------------------------------
-  // Open file
-  // -----------------------------------------
+  // =========================================================
+  // OPEN FILE
+  // =========================================================
 
   const openFile = (id) => {
-    const file = getFiles().find((item) => item.id === id);
+    const file = getFiles().find(
+      (item) => item.id === id
+    );
 
     if (!file) {
       return;
@@ -248,10 +290,13 @@
       state.openFile(id);
     }
 
-    // Local browser files cannot be reopened after a page reload
-    // unless they have a storage path or URL.
     if (file.url) {
-      window.open(file.url, "_blank", "noopener");
+      window.open(
+        file.url,
+        "_blank",
+        "noopener"
+      );
+
       return;
     }
 
@@ -261,46 +306,73 @@
     }
 
     if (file.dataUrl) {
-      window.open(file.dataUrl, "_blank", "noopener");
+      window.open(
+        file.dataUrl,
+        "_blank",
+        "noopener"
+      );
+
       return;
     }
 
-    showToast("This file is stored locally in DeskOS.");
+    showToast(
+      "This file is stored locally in DeskOS."
+    );
   };
 
-  // -----------------------------------------
-  // Download cloud file
-  // -----------------------------------------
+  // =========================================================
+  // DOWNLOAD CLOUD FILE
+  // =========================================================
 
   const downloadCloudFile = async (file) => {
     const connection = await getCloud();
 
     if (!connection) {
-      showToast("Sign in to open cloud files.");
+      showToast(
+        "Sign in to open cloud files."
+      );
+
       return;
     }
 
     try {
       const { client } = connection;
 
-      const { data, error } = await client
+      const {
+        data,
+        error
+      } = await client
         .storage
         .from(BUCKET)
         .download(file.storagePath);
 
       if (error) {
-        console.warn("Could not download cloud file:", error);
-        showToast("Could not open this file.");
+        console.warn(
+          "Could not download cloud file:",
+          error
+        );
+
+        showToast(
+          "Could not open this file."
+        );
+
         return;
       }
 
-      const url = URL.createObjectURL(data);
+      const url =
+        URL.createObjectURL(data);
 
-      const link = document.createElement("a");
+      const link =
+        document.createElement("a");
+
       link.href = url;
-      link.download = file.name || "download";
+      link.download =
+        file.name || "download";
+
       document.body.appendChild(link);
+
       link.click();
+
       link.remove();
 
       setTimeout(() => {
@@ -309,14 +381,20 @@
 
       showToast("File opened.");
     } catch (error) {
-      console.warn("Could not open cloud file:", error);
-      showToast("Could not open this file.");
+      console.warn(
+        "Could not open cloud file:",
+        error
+      );
+
+      showToast(
+        "Could not open this file."
+      );
     }
   };
 
-  // -----------------------------------------
-  // Sync file to Supabase
-  // -----------------------------------------
+  // =========================================================
+  // SYNC FILE
+  // =========================================================
 
   const syncFile = async (file) => {
     const connection = await getCloud();
@@ -330,59 +408,87 @@
     }
 
     try {
-      const { client, user } = connection;
+      const {
+        client,
+        user
+      } = connection;
 
-      const now = new Date().toISOString();
+      const now =
+        new Date().toISOString();
 
       const payload = {
         user_id: user.id,
         local_id: file.id,
-        name: file.name || "Untitled file",
-        storage_path: file.storagePath,
-        mime_type: file.mimeType || "application/octet-stream",
-        size: Number(file.size || 0),
-        created_at: file.createdAt || now,
-        updated_at: file.updatedAt || now
+        name:
+          file.name ||
+          "Untitled file",
+        storage_path:
+          file.storagePath,
+        mime_type:
+          file.mimeType ||
+          "application/octet-stream",
+        size:
+          Number(file.size || 0),
+        created_at:
+          file.createdAt || now,
+        updated_at:
+          file.updatedAt || now
       };
 
-      const { error } = await client
-        .from("files")
-        .upsert(payload, {
-          onConflict: "user_id,local_id"
-        });
+      const { error } =
+        await client
+          .from("files")
+          .upsert(
+            payload,
+            {
+              onConflict:
+                "user_id,local_id"
+            }
+          );
 
       if (error) {
-        console.warn("Could not sync file:", error.message);
+        console.warn(
+          "Could not sync file:",
+          error.message
+        );
+
         return false;
       }
 
       return true;
     } catch (error) {
-      console.warn("Could not sync file:", error);
+      console.warn(
+        "Could not sync file:",
+        error
+      );
+
       return false;
     }
   };
 
-  // -----------------------------------------
-  // Delete file
-  // -----------------------------------------
+  // =========================================================
+  // DELETE FILE
+  // =========================================================
 
   const deleteFile = async (id) => {
     const files = getFiles();
 
-    const file = files.find((item) => item.id === id);
+    const file = files.find(
+      (item) => item.id === id
+    );
 
     if (!file) {
       return false;
     }
 
-    const connection = await getCloud();
+    const connection =
+      await getCloud();
 
-    // Delete local file even when user isn't signed in.
     if (!connection) {
-      state.state.files = files.filter(
-        (item) => item.id !== id
-      );
+      state.state.files =
+        files.filter(
+          (item) => item.id !== id
+        );
 
       saveFiles();
       renderCloudFiles();
@@ -391,14 +497,19 @@
     }
 
     try {
-      const { client, user } = connection;
+      const {
+        client,
+        user
+      } = connection;
 
-      // Remove from Supabase Storage.
       if (file.storagePath) {
-        const { error } = await client
-          .storage
-          .from(BUCKET)
-          .remove([file.storagePath]);
+        const { error } =
+          await client
+            .storage
+            .from(BUCKET)
+            .remove([
+              file.storagePath
+            ]);
 
         if (error) {
           console.warn(
@@ -408,12 +519,12 @@
         }
       }
 
-      // Remove database record.
-      const { error } = await client
-        .from("files")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("local_id", id);
+      const { error } =
+        await client
+          .from("files")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("local_id", id);
 
       if (error) {
         console.warn(
@@ -422,48 +533,62 @@
         );
       }
 
-      // Always remove local record.
-      state.state.files = files.filter(
-        (item) => item.id !== id
-      );
+      state.state.files =
+        files.filter(
+          (item) => item.id !== id
+        );
 
       saveFiles();
       renderCloudFiles();
 
-      showToast("File deleted.");
+      showToast(
+        "File deleted."
+      );
 
       return true;
     } catch (error) {
-      console.warn("Could not delete file:", error);
+      console.warn(
+        "Could not delete file:",
+        error
+      );
+
       return false;
     }
   };
 
-  // -----------------------------------------
-  // Load cloud files
-  // -----------------------------------------
+  // =========================================================
+  // LOAD CLOUD FILES
+  // =========================================================
 
   const loadCloudFiles = async () => {
-    // Always render local files first.
     renderCloudFiles();
 
-    const connection = await getCloud();
+    const connection =
+      await getCloud();
 
-    // Not signed in = local files still work.
     if (!connection) {
       return;
     }
 
     try {
-      const { client, user } = connection;
+      const {
+        client,
+        user
+      } = connection;
 
-      const { data, error } = await client
+      const {
+        data,
+        error
+      } = await client
         .from("files")
         .select("*")
         .eq("user_id", user.id)
-        .order("updated_at", {
-          ascending: false
-        });
+        .order(
+          "updated_at",
+          {
+            ascending: false
+          }
+        );
 
       if (error) {
         console.warn(
@@ -474,47 +599,89 @@
         return;
       }
 
-      const localFiles = [...getFiles()];
-      const cloudFiles = Array.isArray(data)
-        ? data
-        : [];
+      const localFiles =
+        [...getFiles()];
 
-      const cloudIds = new Set(
+      const cloudFiles =
+        Array.isArray(data)
+          ? data
+          : [];
+
+      const cloudIds =
+        new Set(
+          cloudFiles.map(
+            (file) =>
+              file.local_id ||
+              file.id
+          )
+        );
+
+      const merged =
         cloudFiles.map(
-          (file) => file.local_id || file.id
-        )
-      );
+          (file) => ({
+            id:
+              file.local_id ||
+              file.id,
 
-      const merged = cloudFiles.map((file) => ({
-        id: file.local_id || file.id,
-        name: file.name || "Untitled file",
-        source: "DeskOS Cloud",
-        kind: fileKind(file.mime_type),
-        openedAt: file.updated_at
-          ? new Date(file.updated_at).getTime()
-          : Date.now(),
-        storagePath: file.storage_path,
-        mimeType:
-          file.mime_type ||
-          "application/octet-stream",
-        size: Number(file.size || 0),
-        createdAt: file.created_at,
-        updatedAt: file.updated_at
-      }));
+            name:
+              file.name ||
+              "Untitled file",
 
-      // Keep local files that haven't been uploaded.
+            source:
+              "DeskOS Cloud",
+
+            kind:
+              fileKind(
+                file.mime_type
+              ),
+
+            openedAt:
+              file.updated_at
+                ? new Date(
+                    file.updated_at
+                  ).getTime()
+                : Date.now(),
+
+            storagePath:
+              file.storage_path,
+
+            mimeType:
+              file.mime_type ||
+              "application/octet-stream",
+
+            size:
+              Number(
+                file.size || 0
+              ),
+
+            createdAt:
+              file.created_at,
+
+            updatedAt:
+              file.updated_at
+          })
+        );
+
       localFiles
-        .filter((file) => !cloudIds.has(file.id))
-        .forEach((file) => {
-          merged.push(file);
-        });
+        .filter(
+          (file) =>
+            !cloudIds.has(file.id)
+        )
+        .forEach(
+          (file) => {
+            merged.push(file);
+          }
+        );
 
-      state.state.files = merged;
+      state.state.files =
+        merged;
 
       saveFiles();
 
       window.dispatchEvent(
-        new CustomEvent("deskos:cloudfilesloaded")
+        new CustomEvent(
+          "deskos:cloudfilesloaded"
+        )
       );
 
       renderCloudFiles();
@@ -528,34 +695,52 @@
     }
   };
 
-  // -----------------------------------------
-  // Upload files
-  // -----------------------------------------
+  // =========================================================
+  // UPLOAD FILES
+  // =========================================================
 
   const uploadFiles = async (input) => {
-    if (!input || !input.files || !input.files.length) {
+    if (
+      !input ||
+      !input.files ||
+      !input.files.length
+    ) {
       return;
     }
 
-    if (input.dataset.cloudUploading === "true") {
+    if (
+      input.dataset.cloudUploading ===
+      "true"
+    ) {
       return;
     }
 
-    input.dataset.cloudUploading = "true";
+    input.dataset.cloudUploading =
+      "true";
 
-    const files = Array.from(input.files);
+    const files =
+      Array.from(input.files);
 
     try {
-      const connection = await getCloud();
+      const connection =
+        await getCloud();
 
       if (!connection) {
-        showToast("Sign in to upload files to the cloud.");
+        showToast(
+          "Sign in to upload files to the cloud."
+        );
+
         return;
       }
 
-      const { client, user } = connection;
+      const {
+        client,
+        user
+      } = connection;
 
-      for (const selectedFile of files) {
+      for (
+        const selectedFile of files
+      ) {
         const id =
           typeof state.makeId === "function"
             ? state.makeId("file")
@@ -563,14 +748,20 @@
                 .toString(36)
                 .slice(2)}`;
 
-        const extension = selectedFile.name.includes(".")
-          ? "." + selectedFile.name.split(".").pop()
-          : "";
+        const extension =
+          selectedFile.name.includes(".")
+            ? "." +
+              selectedFile.name
+                .split(".")
+                .pop()
+            : "";
 
         const storagePath =
           `${user.id}/${id}${extension}`;
 
-        const { error: uploadError } = await client
+        const {
+          error: uploadError
+        } = await client
           .storage
           .from(BUCKET)
           .upload(
@@ -597,28 +788,50 @@
           continue;
         }
 
-        const now = new Date().toISOString();
+        const now =
+          new Date().toISOString();
 
         const localFile = {
           id,
-          name: selectedFile.name,
-          source: "DeskOS Cloud",
-          kind: fileKind(selectedFile.type),
+          name:
+            selectedFile.name,
+
+          source:
+            "DeskOS Cloud",
+
+          kind:
+            fileKind(
+              selectedFile.type
+            ),
+
           mimeType:
             selectedFile.type ||
             "application/octet-stream",
-          size: selectedFile.size,
+
+          size:
+            selectedFile.size,
+
           storagePath,
-          openedAt: Date.now(),
-          createdAt: now,
-          updatedAt: now
+
+          openedAt:
+            Date.now(),
+
+          createdAt:
+            now,
+
+          updatedAt:
+            now
         };
 
-        getFiles().push(localFile);
+        getFiles().push(
+          localFile
+        );
 
         saveFiles();
 
-        await syncFile(localFile);
+        await syncFile(
+          localFile
+        );
       }
 
       renderCloudFiles();
@@ -634,121 +847,132 @@
         error
       );
 
-      showToast("Could not upload files.");
+      showToast(
+        "Could not upload files."
+      );
     } finally {
-      input.dataset.cloudUploading = "false";
+      input.dataset.cloudUploading =
+        "false";
+
       input.value = "";
     }
   };
 
-  // -----------------------------------------
-  // Toast
-  // -----------------------------------------
+  // =========================================================
+  // EVENT HANDLERS
+  // =========================================================
 
-  const showToast = (message) => {
-    const toast = document.querySelector("#toast");
+  document.addEventListener(
+    "change",
+    (event) => {
+      const input =
+        event.target.closest(
+          "#localFileInput"
+        );
 
-    if (!toast) {
-      return;
-    }
-
-    toast.textContent = message;
-    toast.classList.add("show");
-
-    clearTimeout(showToast.timer);
-
-    showToast.timer = setTimeout(() => {
-      toast.classList.remove("show");
-    }, 2500);
-  };
-
-  // -----------------------------------------
-  // Event handlers
-  // -----------------------------------------
-
-  document.addEventListener("change", (event) => {
-    const input = event.target.closest("#localFileInput");
-
-    if (!input) {
-      return;
-    }
-
-    uploadFiles(input);
-  });
-
-  document.addEventListener("click", (event) => {
-    const openButton =
-      event.target.closest("[data-cloud-file]");
-
-    if (
-      openButton &&
-      !event.target.closest("[data-delete-file]")
-    ) {
-      const id = openButton.dataset.cloudFile;
-
-      if (id) {
-        openFile(id);
+      if (!input) {
+        return;
       }
 
-      return;
+      uploadFiles(input);
     }
+  );
 
-    const deleteButton =
-      event.target.closest("[data-delete-file]");
+  document.addEventListener(
+    "click",
+    (event) => {
+      const openButton =
+        event.target.closest(
+          "[data-cloud-file]"
+        );
 
-    if (deleteButton) {
-      const id = deleteButton.dataset.deleteFile;
+      if (
+        openButton &&
+        !event.target.closest(
+          "[data-delete-file]"
+        )
+      ) {
+        const id =
+          openButton.dataset.cloudFile;
+
+        if (id) {
+          openFile(id);
+        }
+
+        return;
+      }
+
+      const deleteButton =
+        event.target.closest(
+          "[data-delete-file]"
+        );
+
+      if (!deleteButton) {
+        return;
+      }
+
+      const id =
+        deleteButton.dataset.deleteFile;
 
       if (!id) {
         return;
       }
 
-      const file = getFiles().find(
-        (item) => item.id === id
-      );
+      const file =
+        getFiles().find(
+          (item) => item.id === id
+        );
 
-      const confirmed = window.confirm(
-        `Delete "${file?.name || "this file"}"?`
-      );
+      const confirmed =
+        window.confirm(
+          `Delete "${
+            file?.name ||
+            "this file"
+          }"?`
+        );
 
       if (confirmed) {
         deleteFile(id);
       }
     }
-  });
+  );
 
-  // -----------------------------------------
-  // Cloud authentication changes
-  // -----------------------------------------
+  // =========================================================
+  // AUTH LISTENER
+  // =========================================================
 
-  const setupCloudListener = async () => {
-    if (!cloud) {
-      return;
-    }
-
-    try {
-      const client = await cloud.ready;
-
-      if (!client) {
+  const setupCloudListener =
+    async () => {
+      if (!cloud) {
         return;
       }
 
-      client.auth.onAuthStateChange(() => {
-        setTimeout(() => {
-          loadCloudFiles();
-        }, 100);
-      });
-    } catch (error) {
-      console.warn(
-        "DeskOS Files: could not attach auth listener.",
-        error
-      );
-    }
-  };
+      try {
+        const client =
+          await cloud.ready;
 
-  // -----------------------------------------
-  // Initialisation
-  // -----------------------------------------
+        if (!client) {
+          return;
+        }
+
+        client.auth.onAuthStateChange(
+          () => {
+            setTimeout(() => {
+              loadCloudFiles();
+            }, 100);
+          }
+        );
+      } catch (error) {
+        console.warn(
+          "DeskOS Files: could not attach auth listener.",
+          error
+        );
+      }
+    };
+
+  // =========================================================
+  // INITIALISATION
+  // =========================================================
 
   renderCloudFiles();
 
@@ -758,16 +982,25 @@
     loadCloudFiles();
   }, 500);
 
-  // -----------------------------------------
-  // Public API
-  // -----------------------------------------
+  // =========================================================
+  // PUBLIC API
+  // =========================================================
 
-  window.DeskOSCloud = window.DeskOSCloud || {};
+  window.DeskOSCloud =
+    window.DeskOSCloud || {};
 
-  window.DeskOSCloud.syncFile = syncFile;
-  window.DeskOSCloud.deleteFile = deleteFile;
-  window.DeskOSCloud.loadFiles = loadCloudFiles;
-  window.DeskOSCloud.uploadFiles = uploadFiles;
-  window.DeskOSCloud.renderFiles = renderCloudFiles;
+  window.DeskOSCloud.syncFile =
+    syncFile;
 
+  window.DeskOSCloud.deleteFile =
+    deleteFile;
+
+  window.DeskOSCloud.loadFiles =
+    loadCloudFiles;
+
+  window.DeskOSCloud.uploadFiles =
+    uploadFiles;
+
+  window.DeskOSCloud.renderFiles =
+    renderCloudFiles;
 })();
