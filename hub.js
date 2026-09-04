@@ -1,1004 +1,178 @@
-```javascript
-// ========================================
-// DESKOS HUB.JS
-// Main controller for the DeskOS dashboard
-// ========================================
+(() => {
+  const state = window.DeskOS;
+  if (!state) return;
 
+  const pad = n => String(n).padStart(2, '0');
+  const toISO = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const fromISO = value => new Date(`${value}T12:00:00`);
+  const dateLabel = value => new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(fromISO(value));
+  const monthLabel = date => new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(date);
 
-// ========================================
-// DESKOS HUB STATE
-// ========================================
+  const updateTopDate = () => {
+    const el = document.querySelector('.date-chip');
+    if (!el) return;
+    const icon = el.querySelector('.calendar-icon');
+    const chevron = el.querySelector('.chevron');
+    el.textContent = '';
+    if (icon) el.appendChild(icon); else { const span = document.createElement('span'); span.className = 'calendar-icon'; span.textContent = '▦'; el.appendChild(span); }
+    el.appendChild(document.createTextNode(new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())));
+    if (chevron) el.appendChild(chevron); else { const span = document.createElement('span'); span.className = 'chevron'; span.textContent = '⌄'; el.appendChild(span); }
+  };
+  updateTopDate();
+  setInterval(updateTopDate, 60000);
 
-const DeskOSHub = {
-  currentView: "overview",
-  initialized: false
-};
+  const query = new URLSearchParams(location.search);
+  if (query.get('view') !== 'calendar') return;
 
+  const grid = document.querySelector('#bigCalendar');
+  const card = document.querySelector('.calendar-page');
+  if (!grid || !card) return;
 
-// ========================================
-// GET CURRENT VIEW
-// ========================================
+  const heading = card.querySelector('.month-heading h2');
+  const buttons = card.querySelectorAll('.month-heading button');
+  const previous = buttons[0];
+  const next = buttons[1];
+  const agendaTitle = card.querySelector('.agenda-title .section-title');
+  const agendaList = card.querySelector('#agendaList');
+  const addButton = card.querySelector('#addEvent');
 
-function getCurrentView() {
-  const params = new URLSearchParams(
-    window.location.search
-  );
+  let monthDate = new Date();
+  monthDate.setDate(1);
+  let selectedDate = toISO(new Date());
 
-  return params.get("view") || "overview";
-}
+  previous.disabled = false;
+  next.disabled = false;
+  previous.type = 'button';
+  next.type = 'button';
 
+  const renderAgenda = () => {
+    const events = state.state.events
+      .filter(event => event.date === selectedDate)
+      .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
 
-// ========================================
-// VIEW TITLES
-// ========================================
+    const tasks = (state.state.tasks || [])
+      .filter(task => task.date === selectedDate)
+      .sort((a, b) => String(a.due || '').localeCompare(String(b.due || '')));
 
-function getViewTitle(view) {
+    if (agendaTitle) agendaTitle.textContent = `${dateLabel(selectedDate).toUpperCase()} · ${events.length + tasks.length} ITEMS`;
 
-  const titles = {
-    overview: "Overview",
-    tasks: "My Tasks",
-    calendar: "Calendar",
-    notes: "Notes",
-    files: "Files",
-    product: "Product Launch",
-    personal: "Personal",
-    reading: "Reading List",
-    help: "Help & Shortcuts",
-    search: "Search",
-    notifications: "Notifications",
-    new: "New",
-    profile: "Profile"
+    if (agendaList) {
+      const eventRows = events.map(event => `
+        <div class="agenda-row">
+          <strong>${event.time || 'All day'}</strong>
+          <span><b>${event.title}</b><small>${event.detail || 'DeskOS event'}</small></span>
+          <button class="danger-text" data-calendar-delete-event="${event.id}">Delete</button>
+        </div>`).join('');
+
+      const taskRows = tasks.map(task => `
+        <div class="agenda-row">
+          <strong>Task</strong>
+          <span><b>${task.title}</b><small>${task.complete ? 'Completed' : (task.due || 'No time set')}</small></span>
+          <button class="calendar-task-toggle" data-calendar-task="${task.id}">${task.complete ? 'Undo' : 'Done'}</button>
+        </div>`).join('');
+
+      agendaList.innerHTML = eventRows + taskRows || '<p class="empty-copy">Nothing planned for this day.</p>';
+    }
   };
 
-  return titles[view] || "DeskOS";
-}
+  const renderCalendar = () => {
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    if (heading) heading.textContent = monthLabel(monthDate);
 
+    const firstDayMondayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = toISO(new Date());
+    const eventDates = new Set(state.state.events.map(event => event.date));
+    const taskDates = new Set((state.state.tasks || []).filter(task => task.date).map(task => task.date));
 
-// ========================================
-// UPDATE ACTIVE NAVIGATION
-// ========================================
+    let html = ['MON','TUE','WED','THU','FRI','SAT','SUN'].map(day => `<b>${day}</b>`).join('');
+    for (let i = 0; i < firstDayMondayIndex; i++) html += '<span></span>';
 
-function updateActiveNavigation(view) {
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = toISO(new Date(year, month, day));
+      const hasEvent = eventDates.has(date);
+      const hasTask = taskDates.has(date);
+      html += `<button type="button" class="calendar-day ${date === selectedDate ? 'selected' : ''} ${date === today ? 'today' : ''}" data-calendar-date="${date}">
+        <span>${day}</span>${hasEvent || hasTask ? `<i title="${hasEvent && hasTask ? 'Events and tasks' : hasEvent ? 'Events' : 'Tasks'}"></i>` : ''}
+      </button>`;
+    }
 
-  document
-    .querySelectorAll("[data-nav]")
-    .forEach(item => {
-
-      item.classList.remove("active");
-
-      if (item.dataset.nav === view) {
-        item.classList.add("active");
-      }
-
+    grid.innerHTML = html;
+    grid.querySelectorAll('[data-calendar-date]').forEach(button => {
+      button.addEventListener('click', () => {
+        selectedDate = button.dataset.calendarDate;
+        renderCalendar();
+        renderAgenda();
+      });
     });
 
-}
+    renderAgenda();
+  };
 
+  previous.addEventListener('click', () => {
+    monthDate.setMonth(monthDate.getMonth() - 1);
+    renderCalendar();
+  });
 
-// ========================================
-// UPDATE DATE
-// ========================================
+  next.addEventListener('click', () => {
+    monthDate.setMonth(monthDate.getMonth() + 1);
+    renderCalendar();
+  });
 
-function updateDate() {
+  const toolbar = document.createElement('div');
+  toolbar.className = 'calendar-toolbar';
+  toolbar.innerHTML = '<button type="button" class="text-action" id="calendarToday">Today</button>';
+  card.insertBefore(toolbar, grid);
+  toolbar.querySelector('#calendarToday').addEventListener('click', () => {
+    const today = new Date();
+    monthDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    selectedDate = toISO(today);
+    renderCalendar();
+  });
 
-  const dateElement =
-    document.getElementById("todayDate");
+  addButton.addEventListener('click', () => {
+    const title = window.prompt(`Event for ${dateLabel(selectedDate)}`, 'New event');
+    if (!title || !title.trim()) return;
+    const time = window.prompt('Time (for example 14:30, or leave blank for all day)', '10:00');
+    state.addEvent(title.trim(), selectedDate, time && time.trim() ? time.trim() : 'All day', 'DeskOS event', 'coral');
+    renderCalendar();
+  });
 
-  if (!dateElement) return;
-
-
-  const now = new Date();
-
-
-  dateElement.textContent =
-    now.toLocaleDateString(
-      "en-AU",
-      {
-        weekday: "short",
-        day: "numeric",
-        month: "short"
+  agendaList.addEventListener('click', event => {
+    const deleteButton = event.target.closest('[data-calendar-delete-event]');
+    if (deleteButton) {
+      if (window.confirm('Delete this event?')) {
+        state.deleteEvent(deleteButton.dataset.calendarDeleteEvent);
+        renderCalendar();
       }
-    );
-}
-
-
-// ========================================
-// UPDATE CLOCK
-// ========================================
-
-function updateClock() {
-
-  const clock =
-    document.getElementById("liveClock");
-
-  if (!clock) return;
-
-
-  const now = new Date();
-
-
-  clock.textContent =
-    now.toLocaleTimeString(
-      "en-AU",
-      {
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-}
-
-
-// ========================================
-// START CLOCK
-// ========================================
-
-function startClock() {
-
-  updateClock();
-
-  setInterval(
-    updateClock,
-    1000
-  );
-
-}
-
-
-// ========================================
-// TOAST MESSAGE
-// ========================================
-
-function showToast(message) {
-
-  const toast =
-    document.getElementById("toast");
-
-  if (!toast) return;
-
-
-  toast.textContent = message;
-
-  toast.classList.add("show");
-
-
-  clearTimeout(
-    window.deskOSToastTimeout
-  );
-
-
-  window.deskOSToastTimeout =
-    setTimeout(() => {
-
-      toast.classList.remove("show");
-
-    }, 3000);
-
-}
-
-
-// Make toast available to other scripts
-
-window.showToast = showToast;
-
-
-// ========================================
-// RENDER HUB CONTENT
-// ========================================
-
-function renderHubContent() {
-
-  const container =
-    document.getElementById("hubContent");
-
-  if (!container) return;
-
-
-  const view =
-    getCurrentView();
-
-
-  DeskOSHub.currentView =
-    view;
-
-
-  updateActiveNavigation(view);
-
-
-  // ======================================
-  // TASKS
-  // ======================================
-
-  if (
-    view === "tasks" &&
-    typeof window.renderTasks === "function"
-  ) {
-
-    window.renderTasks(container);
-
-    return;
-  }
-
-
-  // ======================================
-  // CALENDAR
-  // ======================================
-
-  if (
-    view === "calendar" &&
-    typeof window.renderCalendar === "function"
-  ) {
-
-    window.renderCalendar(container);
-
-    return;
-  }
-
-
-  // ======================================
-  // NOTES
-  // ======================================
-
-  if (
-    view === "notes" &&
-    typeof window.renderNotes === "function"
-  ) {
-
-    window.renderNotes(container);
-
-    return;
-  }
-
-
-  // ======================================
-  // FILES
-  // ======================================
-
-  if (
-    view === "files" &&
-    typeof window.renderFiles === "function"
-  ) {
-
-    window.renderFiles(container);
-
-    return;
-  }
-
-
-  // ======================================
-  // OTHER PAGES
-  // ======================================
-
-  renderBasicView(
-    view,
-    container
-  );
-
-}
-
-
-// ========================================
-// BASIC VIEW RENDERER
-// ========================================
-
-function renderBasicView(
-  view,
-  container
-) {
-
-  const title =
-    getViewTitle(view);
-
-
-  // ======================================
-  // SEARCH
-  // ======================================
-
-  if (view === "search") {
-
-    container.innerHTML = `
-
-      <div class="hub-page">
-
-        <div class="page-header">
-
-          <div>
-
-            <p class="eyebrow">
-              DESKOS
-            </p>
-
-            <h1>
-              Search
-            </h1>
-
-            <p>
-              Find anything in your workspace.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="search-box">
-
-          <input
-            id="globalSearchInput"
-            type="search"
-            placeholder="Search DeskOS..."
-            autocomplete="off"
-          />
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    const input =
-      document.getElementById(
-        "globalSearchInput"
-      );
-
-
-    if (input) {
-
-      input.focus();
-
+      return;
     }
 
-
-    return;
-  }
-
-
-  // ======================================
-  // NEW
-  // ======================================
-
-  if (view === "new") {
-
-    container.innerHTML = `
-
-      <div class="hub-page">
-
-        <div class="page-header">
-
-          <div>
-
-            <p class="eyebrow">
-              CREATE
-            </p>
-
-            <h1>
-              New
-            </h1>
-
-            <p>
-              Create something in DeskOS.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="new-options">
-
-          <button
-            class="new-option"
-            onclick="navigateToView('tasks')"
-          >
-            <span>✓</span>
-            <strong>Task</strong>
-            <small>Create a new task</small>
-          </button>
-
-
-          <button
-            class="new-option"
-            onclick="navigateToView('notes')"
-          >
-            <span>✦</span>
-            <strong>Note</strong>
-            <small>Create a new note</small>
-          </button>
-
-
-          <button
-            class="new-option"
-            onclick="navigateToView('calendar')"
-          >
-            <span>□</span>
-            <strong>Event</strong>
-            <small>Add a calendar event</small>
-          </button>
-
-
-          <button
-            class="new-option"
-            onclick="navigateToView('files')"
-          >
-            <span>▱</span>
-            <strong>File</strong>
-            <small>Open your files</small>
-          </button>
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    return;
-  }
-
-
-  // ======================================
-  // HELP
-  // ======================================
-
-  if (view === "help") {
-
-    container.innerHTML = `
-
-      <div class="hub-page">
-
-        <div class="page-header">
-
-          <div>
-
-            <p class="eyebrow">
-              DESKOS
-            </p>
-
-            <h1>
-              Help & Shortcuts
-            </h1>
-
-            <p>
-              Useful DeskOS keyboard shortcuts.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="shortcut-list">
-
-          <div class="shortcut-row">
-            <strong>Ctrl / Cmd + K</strong>
-            <span>Open search</span>
-          </div>
-
-
-          <div class="shortcut-row">
-            <strong>?</strong>
-            <span>Open help</span>
-          </div>
-
-
-          <div class="shortcut-row">
-            <strong>+</strong>
-            <span>Create something new</span>
-          </div>
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    return;
-  }
-
-
-  // ======================================
-  // NOTIFICATIONS
-  // ======================================
-
-  if (view === "notifications") {
-
-    container.innerHTML = `
-
-      <div class="hub-page">
-
-        <div class="page-header">
-
-          <div>
-
-            <p class="eyebrow">
-              DESKOS
-            </p>
-
-            <h1>
-              Notifications
-            </h1>
-
-            <p>
-              You're all caught up.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty-state">
-
-          <div class="empty-state-icon">
-            ♢
-          </div>
-
-          <h2>
-            No new notifications
-          </h2>
-
-          <p>
-            New activity will appear here.
-          </p>
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    return;
-  }
-
-
-  // ======================================
-  // PROFILE
-  // ======================================
-
-  if (view === "profile") {
-
-    container.innerHTML = `
-
-      <div class="hub-page">
-
-        <div class="page-header">
-
-          <div>
-
-            <p class="eyebrow">
-              ACCOUNT
-            </p>
-
-            <h1>
-              Profile
-            </h1>
-
-            <p>
-              Manage your DeskOS account.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="profile-page">
-
-          <div class="profile-large-avatar">
-            <span data-user-initials>
-              AM
-            </span>
-          </div>
-
-
-          <div>
-
-            <h2 data-user-full-name>
-              Alex Morgan
-            </h2>
-
-            <p>
-              DeskOS account
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    return;
-  }
-
-
-  // ======================================
-  // PINNED PAGES
-  // ======================================
-
-  if (
-    view === "product" ||
-    view === "personal" ||
-    view === "reading"
-  ) {
-
-    container.innerHTML = `
-
-      <div class="hub-page">
-
-        <div class="page-header">
-
-          <div>
-
-            <p class="eyebrow">
-              PINNED
-            </p>
-
-            <h1>
-              ${title}
-            </h1>
-
-            <p>
-              Your ${title.toLowerCase()} workspace.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty-state">
-
-          <div class="empty-state-icon">
-            ✦
-          </div>
-
-          <h2>
-            Nothing here yet
-          </h2>
-
-          <p>
-            Content for this section will appear here.
-          </p>
-
-        </div>
-
-      </div>
-
-    `;
-
-
-    return;
-  }
-
-
-  // ======================================
-  // DEFAULT
-  // ======================================
-
-  container.innerHTML = `
-
-    <div class="hub-page">
-
-      <div class="page-header">
-
-        <div>
-
-          <p class="eyebrow">
-            DESKOS
-          </p>
-
-          <h1>
-            ${title}
-          </h1>
-
-          <p>
-            Welcome to DeskOS.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="empty-state">
-
-        <div class="empty-state-icon">
-          ✦
-        </div>
-
-        <h2>
-          ${title}
-        </h2>
-
-        <p>
-          This section is ready for your DeskOS workspace.
-        </p>
-
-      </div>
-
-    </div>
-
-  `;
-
-}
-
-
-// ========================================
-// NAVIGATE TO VIEW
-// ========================================
-
-function navigateToView(view) {
-
-  if (!view) return;
-
-
-  if (view === "overview") {
-
-    window.location.href =
-      "index.html";
-
-    return;
-  }
-
-
-  window.location.href =
-    "hub.html?view=" +
-    encodeURIComponent(view);
-
-}
-
-
-// Make available globally
-
-window.navigateToView =
-  navigateToView;
-
-
-// ========================================
-// SEARCH SHORTCUT
-// ========================================
-
-function setupSearchShortcut() {
-
-  document.addEventListener(
-    "keydown",
-    function(event) {
-
-      const modifier =
-        event.ctrlKey ||
-        event.metaKey;
-
-
-      if (
-        modifier &&
-        event.key.toLowerCase() === "k"
-      ) {
-
-        event.preventDefault();
-
-        navigateToView("search");
-
+    const taskButton = event.target.closest('[data-calendar-task]');
+    if (taskButton) {
+      const task = state.state.tasks.find(item => item.id === taskButton.dataset.calendarTask);
+      if (task) {
+        state.updateTask(task.id, { complete: !task.complete });
+        renderCalendar();
       }
-
     }
-  );
-
-}
-
-
-// ========================================
-// HELP SHORTCUT
-// ========================================
-
-function setupHelpShortcut() {
-
-  document.addEventListener(
-    "keydown",
-    function(event) {
-
-      if (
-        event.key === "?" &&
-        !isTyping()
-      ) {
-
-        navigateToView("help");
-
-      }
-
-    }
-  );
-
-}
-
-
-// ========================================
-// CHECK IF TYPING
-// ========================================
-
-function isTyping() {
-
-  const element =
-    document.activeElement;
-
-
-  if (!element) {
-    return false;
-  }
-
-
-  const tag =
-    element.tagName.toLowerCase();
-
-
-  return (
-    tag === "input" ||
-    tag === "textarea" ||
-    tag === "select" ||
-    element.isContentEditable
-  );
-
-}
-
-
-// ========================================
-// PROFILE FALLBACK
-// ========================================
-
-function setupProfileFallback() {
-
-  const name =
-    document.querySelector(
-      "[data-user-full-name]"
-    );
-
-  const initials =
-    document.querySelector(
-      "[data-user-initials]"
-    );
-
-
-  /*
-   * profile-cloud.js should replace these
-   * with the real logged-in user.
-   *
-   * These are only fallbacks so the UI
-   * doesn't look broken if the cloud
-   * profile hasn't loaded yet.
-   */
-
-  if (
-    name &&
-    !name.textContent.trim()
-  ) {
-
-    name.textContent =
-      "DeskOS User";
-
-  }
-
-
-  if (
-    initials &&
-    !initials.textContent.trim()
-  ) {
-
-    initials.textContent =
-      "DU";
-
-  }
-
-}
-
-
-// ========================================
-// WORKSPACE EVENT
-// ========================================
-
-window.addEventListener(
-  "deskOSWorkspaceChanged",
-  function() {
-
-    console.log(
-      "DeskOS workspace changed"
-    );
-
-
-    /*
-     * Refresh the current page when the
-     * workspace changes.
-     */
-
-    renderHubContent();
-
-  }
-);
-
-
-// ========================================
-// INITIALISE HUB
-// ========================================
-
-function initialiseHub() {
-
-  if (
-    DeskOSHub.initialized
-  ) {
-
-    return;
-  }
-
-
-  DeskOSHub.initialized =
-    true;
-
-
-  updateDate();
-
-  startClock();
-
-  setupSearchShortcut();
-
-  setupHelpShortcut();
-
-  setupProfileFallback();
-
-  renderHubContent();
-
-
-  console.log(
-    "DeskOS Hub loaded successfully."
-  );
-
-}
-
-
-// ========================================
-// DOM READY
-// ========================================
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    initialiseHub
-  );
-
-} else {
-
-  initialiseHub();
-
-}
-
-
-// ========================================
-// PUBLIC DESKOS HUB API
-// ========================================
-
-window.DeskOSHub = {
-
-  getView: function() {
-    return getCurrentView();
-  },
-
-  navigate: function(view) {
-    navigateToView(view);
-  },
-
-  reload: function() {
-    renderHubContent();
-  },
-
-  toast: function(message) {
-    showToast(message);
-  }
-
-};
-```
+  });
+
+  const taskButton = document.createElement('button');
+  taskButton.type = 'button';
+  taskButton.className = 'text-action';
+  taskButton.textContent = '+ Task';
+  card.querySelector('.agenda-title')?.appendChild(taskButton);
+  taskButton.addEventListener('click', () => {
+    const title = window.prompt(`Task for ${dateLabel(selectedDate)}`, 'New task');
+    if (!title || !title.trim()) return;
+    const due = window.prompt('Time or label (optional)', 'Today') || 'Today';
+    state.addTask(title.trim(), due.trim());
+    const matching = [...state.state.tasks].reverse().find(task => task.title === title.trim());
+    if (matching) state.updateTask(matching.id, { date: selectedDate });
+    renderCalendar();
+  });
+
+  renderCalendar();
+})();
