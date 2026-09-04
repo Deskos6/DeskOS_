@@ -1,62 +1,61 @@
 ```javascript
 // ========================================
-// DESKOS HUB
-// Main dashboard controller
+// DESKOS HUB.JS
+// Main controller for the DeskOS dashboard
 // ========================================
 
 
 // ========================================
-// DESKOS STATE
+// DESKOS HUB STATE
 // ========================================
 
 const DeskOSHub = {
-
   currentView: "overview",
-
   initialized: false
-
 };
 
 
 // ========================================
-// GET URL VIEW
+// GET CURRENT VIEW
 // ========================================
 
 function getCurrentView() {
-
-  const params =
-    new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(
+    window.location.search
+  );
 
   return params.get("view") || "overview";
-
 }
 
 
 // ========================================
-// NAVIGATION
+// VIEW TITLES
 // ========================================
 
-function navigateTo(view) {
+function getViewTitle(view) {
 
-  if (!view) {
-    view = "overview";
-  }
+  const titles = {
+    overview: "Overview",
+    tasks: "My Tasks",
+    calendar: "Calendar",
+    notes: "Notes",
+    files: "Files",
+    product: "Product Launch",
+    personal: "Personal",
+    reading: "Reading List",
+    help: "Help & Shortcuts",
+    search: "Search",
+    notifications: "Notifications",
+    new: "New",
+    profile: "Profile"
+  };
 
-  if (view === "overview") {
-
-    window.location.href = "index.html";
-
-    return;
-  }
-
-  window.location.href =
-    "hub.html?view=" +
-    encodeURIComponent(view);
+  return titles[view] || "DeskOS";
 }
 
 
 // ========================================
-// SET ACTIVE NAV ITEM
+// UPDATE ACTIVE NAVIGATION
 // ========================================
 
 function updateActiveNavigation(view) {
@@ -67,12 +66,8 @@ function updateActiveNavigation(view) {
 
       item.classList.remove("active");
 
-      if (
-        item.dataset.nav === view
-      ) {
-
+      if (item.dataset.nav === view) {
         item.classList.add("active");
-
       }
 
     });
@@ -81,55 +76,48 @@ function updateActiveNavigation(view) {
 
 
 // ========================================
-// TODAY'S DATE
+// UPDATE DATE
 // ========================================
 
 function updateDate() {
 
-  const element =
+  const dateElement =
     document.getElementById("todayDate");
 
-  if (!element) return;
+  if (!dateElement) return;
 
 
   const now = new Date();
 
 
-  const options = {
-
-    weekday: "short",
-
-    day: "numeric",
-
-    month: "short"
-
-  };
-
-
-  element.textContent =
+  dateElement.textContent =
     now.toLocaleDateString(
       "en-AU",
-      options
+      {
+        weekday: "short",
+        day: "numeric",
+        month: "short"
+      }
     );
 }
 
 
 // ========================================
-// LIVE CLOCK
+// UPDATE CLOCK
 // ========================================
 
 function updateClock() {
 
-  const element =
+  const clock =
     document.getElementById("liveClock");
 
-  if (!element) return;
+  if (!clock) return;
 
 
   const now = new Date();
 
 
-  element.textContent =
+  clock.textContent =
     now.toLocaleTimeString(
       "en-AU",
       {
@@ -157,7 +145,7 @@ function startClock() {
 
 
 // ========================================
-// TOAST
+// TOAST MESSAGE
 // ========================================
 
 function showToast(message) {
@@ -168,40 +156,36 @@ function showToast(message) {
   if (!toast) return;
 
 
-  toast.textContent =
-    message;
+  toast.textContent = message;
 
   toast.classList.add("show");
 
 
   clearTimeout(
-    window.deskOSToastTimer
+    window.deskOSToastTimeout
   );
 
 
-  window.deskOSToastTimer =
-    setTimeout(
-      () => {
+  window.deskOSToastTimeout =
+    setTimeout(() => {
 
-        toast.classList.remove("show");
+      toast.classList.remove("show");
 
-      },
-      3000
-    );
+    }, 3000);
+
 }
 
 
-// Make toast available to other DeskOS files
+// Make toast available to other scripts
 
-window.showToast =
-  showToast;
+window.showToast = showToast;
 
 
 // ========================================
-// LOAD HUB CONTENT
+// RENDER HUB CONTENT
 // ========================================
 
-function loadHubContent() {
+function renderHubContent() {
 
   const container =
     document.getElementById("hubContent");
@@ -220,36 +204,13 @@ function loadHubContent() {
   updateActiveNavigation(view);
 
 
-  /*
-   * Most DeskOS views are handled by the
-   * existing cloud/functionality scripts.
-   *
-   * This fallback keeps the Hub from being
-   * completely blank if a view hasn't been
-   * implemented yet.
-   */
-
-
-  if (
-    typeof window.renderDeskOSView ===
-    "function"
-  ) {
-
-    window.renderDeskOSView(
-      view,
-      container
-    );
-
-    return;
-  }
-
-
-  // Existing functions that may be available
+  // ======================================
+  // TASKS
+  // ======================================
 
   if (
     view === "tasks" &&
-    typeof window.renderTasks ===
-    "function"
+    typeof window.renderTasks === "function"
   ) {
 
     window.renderTasks(container);
@@ -258,10 +219,13 @@ function loadHubContent() {
   }
 
 
+  // ======================================
+  // CALENDAR
+  // ======================================
+
   if (
     view === "calendar" &&
-    typeof window.renderCalendar ===
-    "function"
+    typeof window.renderCalendar === "function"
   ) {
 
     window.renderCalendar(container);
@@ -270,10 +234,13 @@ function loadHubContent() {
   }
 
 
+  // ======================================
+  // NOTES
+  // ======================================
+
   if (
     view === "notes" &&
-    typeof window.renderNotes ===
-    "function"
+    typeof window.renderNotes === "function"
   ) {
 
     window.renderNotes(container);
@@ -282,10 +249,13 @@ function loadHubContent() {
   }
 
 
+  // ======================================
+  // FILES
+  // ======================================
+
   if (
     view === "files" &&
-    typeof window.renderFiles ===
-    "function"
+    typeof window.renderFiles === "function"
   ) {
 
     window.renderFiles(container);
@@ -294,95 +264,499 @@ function loadHubContent() {
   }
 
 
-  // Fallback
+  // ======================================
+  // OTHER PAGES
+  // ======================================
 
-  container.innerHTML = `
-    <div class="hub-empty-state">
+  renderBasicView(
+    view,
+    container
+  );
 
-      <div class="hub-empty-icon">
-        ✦
+}
+
+
+// ========================================
+// BASIC VIEW RENDERER
+// ========================================
+
+function renderBasicView(
+  view,
+  container
+) {
+
+  const title =
+    getViewTitle(view);
+
+
+  // ======================================
+  // SEARCH
+  // ======================================
+
+  if (view === "search") {
+
+    container.innerHTML = `
+
+      <div class="hub-page">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="eyebrow">
+              DESKOS
+            </p>
+
+            <h1>
+              Search
+            </h1>
+
+            <p>
+              Find anything in your workspace.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="search-box">
+
+          <input
+            id="globalSearchInput"
+            type="search"
+            placeholder="Search DeskOS..."
+            autocomplete="off"
+          />
+
+        </div>
+
       </div>
 
-      <h1>
-        ${getViewTitle(view)}
-      </h1>
-
-      <p>
-        This DeskOS section is ready to be connected.
-      </p>
-
-    </div>
-  `;
-}
+    `;
 
 
-// ========================================
-// VIEW TITLES
-// ========================================
-
-function getViewTitle(view) {
-
-  const titles = {
-
-    overview: "Overview",
-
-    tasks: "My tasks",
-
-    calendar: "Calendar",
-
-    notes: "Notes",
-
-    files: "Files",
-
-    product: "Product launch",
-
-    personal: "Personal",
-
-    reading: "Reading list",
-
-    help: "Help & shortcuts",
-
-    search: "Search",
-
-    notifications: "Notifications",
-
-    new: "Create something new",
-
-    profile: "Profile"
-
-  };
+    const input =
+      document.getElementById(
+        "globalSearchInput"
+      );
 
 
-  return (
-    titles[view] ||
-    "DeskOS"
-  );
-}
+    if (input) {
 
-
-// ========================================
-// NEW BUTTON
-// ========================================
-
-function setupNewButton() {
-
-  const button =
-    document.querySelector(
-      ".new-button"
-    );
-
-  if (!button) return;
-
-
-  button.addEventListener(
-    "click",
-    function(event) {
-
-      // Let the existing href work
+      input.focus();
 
     }
-  );
+
+
+    return;
+  }
+
+
+  // ======================================
+  // NEW
+  // ======================================
+
+  if (view === "new") {
+
+    container.innerHTML = `
+
+      <div class="hub-page">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="eyebrow">
+              CREATE
+            </p>
+
+            <h1>
+              New
+            </h1>
+
+            <p>
+              Create something in DeskOS.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="new-options">
+
+          <button
+            class="new-option"
+            onclick="navigateToView('tasks')"
+          >
+            <span>✓</span>
+            <strong>Task</strong>
+            <small>Create a new task</small>
+          </button>
+
+
+          <button
+            class="new-option"
+            onclick="navigateToView('notes')"
+          >
+            <span>✦</span>
+            <strong>Note</strong>
+            <small>Create a new note</small>
+          </button>
+
+
+          <button
+            class="new-option"
+            onclick="navigateToView('calendar')"
+          >
+            <span>□</span>
+            <strong>Event</strong>
+            <small>Add a calendar event</small>
+          </button>
+
+
+          <button
+            class="new-option"
+            onclick="navigateToView('files')"
+          >
+            <span>▱</span>
+            <strong>File</strong>
+            <small>Open your files</small>
+          </button>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    return;
+  }
+
+
+  // ======================================
+  // HELP
+  // ======================================
+
+  if (view === "help") {
+
+    container.innerHTML = `
+
+      <div class="hub-page">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="eyebrow">
+              DESKOS
+            </p>
+
+            <h1>
+              Help & Shortcuts
+            </h1>
+
+            <p>
+              Useful DeskOS keyboard shortcuts.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="shortcut-list">
+
+          <div class="shortcut-row">
+            <strong>Ctrl / Cmd + K</strong>
+            <span>Open search</span>
+          </div>
+
+
+          <div class="shortcut-row">
+            <strong>?</strong>
+            <span>Open help</span>
+          </div>
+
+
+          <div class="shortcut-row">
+            <strong>+</strong>
+            <span>Create something new</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    return;
+  }
+
+
+  // ======================================
+  // NOTIFICATIONS
+  // ======================================
+
+  if (view === "notifications") {
+
+    container.innerHTML = `
+
+      <div class="hub-page">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="eyebrow">
+              DESKOS
+            </p>
+
+            <h1>
+              Notifications
+            </h1>
+
+            <p>
+              You're all caught up.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="empty-state">
+
+          <div class="empty-state-icon">
+            ♢
+          </div>
+
+          <h2>
+            No new notifications
+          </h2>
+
+          <p>
+            New activity will appear here.
+          </p>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    return;
+  }
+
+
+  // ======================================
+  // PROFILE
+  // ======================================
+
+  if (view === "profile") {
+
+    container.innerHTML = `
+
+      <div class="hub-page">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="eyebrow">
+              ACCOUNT
+            </p>
+
+            <h1>
+              Profile
+            </h1>
+
+            <p>
+              Manage your DeskOS account.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="profile-page">
+
+          <div class="profile-large-avatar">
+            <span data-user-initials>
+              AM
+            </span>
+          </div>
+
+
+          <div>
+
+            <h2 data-user-full-name>
+              Alex Morgan
+            </h2>
+
+            <p>
+              DeskOS account
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    return;
+  }
+
+
+  // ======================================
+  // PINNED PAGES
+  // ======================================
+
+  if (
+    view === "product" ||
+    view === "personal" ||
+    view === "reading"
+  ) {
+
+    container.innerHTML = `
+
+      <div class="hub-page">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="eyebrow">
+              PINNED
+            </p>
+
+            <h1>
+              ${title}
+            </h1>
+
+            <p>
+              Your ${title.toLowerCase()} workspace.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="empty-state">
+
+          <div class="empty-state-icon">
+            ✦
+          </div>
+
+          <h2>
+            Nothing here yet
+          </h2>
+
+          <p>
+            Content for this section will appear here.
+          </p>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    return;
+  }
+
+
+  // ======================================
+  // DEFAULT
+  // ======================================
+
+  container.innerHTML = `
+
+    <div class="hub-page">
+
+      <div class="page-header">
+
+        <div>
+
+          <p class="eyebrow">
+            DESKOS
+          </p>
+
+          <h1>
+            ${title}
+          </h1>
+
+          <p>
+            Welcome to DeskOS.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="empty-state">
+
+        <div class="empty-state-icon">
+          ✦
+        </div>
+
+        <h2>
+          ${title}
+        </h2>
+
+        <p>
+          This section is ready for your DeskOS workspace.
+        </p>
+
+      </div>
+
+    </div>
+
+  `;
+
 }
+
+
+// ========================================
+// NAVIGATE TO VIEW
+// ========================================
+
+function navigateToView(view) {
+
+  if (!view) return;
+
+
+  if (view === "overview") {
+
+    window.location.href =
+      "index.html";
+
+    return;
+  }
+
+
+  window.location.href =
+    "hub.html?view=" +
+    encodeURIComponent(view);
+
+}
+
+
+// Make available globally
+
+window.navigateToView =
+  navigateToView;
 
 
 // ========================================
@@ -395,24 +769,19 @@ function setupSearchShortcut() {
     "keydown",
     function(event) {
 
-      // Windows / Linux
       const modifier =
-        event.ctrlKey;
-
-      // Mac
-      const command =
+        event.ctrlKey ||
         event.metaKey;
 
 
       if (
-        (modifier || command) &&
+        modifier &&
         event.key.toLowerCase() === "k"
       ) {
 
         event.preventDefault();
 
-        window.location.href =
-          "hub.html?view=search";
+        navigateToView("search");
 
       }
 
@@ -423,7 +792,7 @@ function setupSearchShortcut() {
 
 
 // ========================================
-// QUESTION MARK SHORTCUT
+// HELP SHORTCUT
 // ========================================
 
 function setupHelpShortcut() {
@@ -434,11 +803,10 @@ function setupHelpShortcut() {
 
       if (
         event.key === "?" &&
-        !isTypingInField()
+        !isTyping()
       ) {
 
-        window.location.href =
-          "hub.html?view=help";
+        navigateToView("help");
 
       }
 
@@ -449,139 +817,106 @@ function setupHelpShortcut() {
 
 
 // ========================================
-// CHECK IF USER IS TYPING
+// CHECK IF TYPING
 // ========================================
 
-function isTypingInField() {
+function isTyping() {
 
-  const active =
+  const element =
     document.activeElement;
 
-  if (!active) {
+
+  if (!element) {
     return false;
   }
 
 
   const tag =
-    active.tagName.toLowerCase();
+    element.tagName.toLowerCase();
 
 
   return (
     tag === "input" ||
     tag === "textarea" ||
     tag === "select" ||
-    active.isContentEditable
+    element.isContentEditable
   );
 
 }
 
 
 // ========================================
-// HANDLE NAVIGATION LINKS
+// PROFILE FALLBACK
 // ========================================
 
-function setupNavigation() {
+function setupProfileFallback() {
 
-  document
-    .querySelectorAll(
-      'a[href^="hub.html?view="]'
-    )
-    .forEach(link => {
-
-      link.addEventListener(
-        "click",
-        function() {
-
-          // Allow normal browser navigation
-
-        }
-      );
-
-    });
-
-}
-
-
-// ========================================
-// WORKSPACE CHANGED EVENT
-// ========================================
-
-window.addEventListener(
-  "deskOSWorkspaceChanged",
-  function(event) {
-
-    console.log(
-      "DeskOS workspace changed:",
-      event.detail
-    );
-
-
-    /*
-     * When we later connect Tasks,
-     * Notes and Calendar to workspaces,
-     * this event will reload the current
-     * section automatically.
-     */
-
-    if (
-      typeof window.refreshDeskOSView ===
-      "function"
-    ) {
-
-      window.refreshDeskOSView();
-    }
-
-  }
-);
-
-
-// ========================================
-// PROFILE NAME
-// ========================================
-
-function updateProfileDisplay() {
-
-  /*
-   * profile-cloud.js handles the real
-   * profile information.
-   *
-   * This only provides safe fallbacks.
-   */
-
-
-  const nameElement =
+  const name =
     document.querySelector(
       "[data-user-full-name]"
     );
 
-  const initialsElement =
+  const initials =
     document.querySelector(
       "[data-user-initials]"
     );
 
 
+  /*
+   * profile-cloud.js should replace these
+   * with the real logged-in user.
+   *
+   * These are only fallbacks so the UI
+   * doesn't look broken if the cloud
+   * profile hasn't loaded yet.
+   */
+
   if (
-    nameElement &&
-    !nameElement.textContent.trim()
+    name &&
+    !name.textContent.trim()
   ) {
 
-    nameElement.textContent =
+    name.textContent =
       "DeskOS User";
 
   }
 
 
   if (
-    initialsElement &&
-    !initialsElement.textContent.trim()
+    initials &&
+    !initials.textContent.trim()
   ) {
 
-    initialsElement.textContent =
+    initials.textContent =
       "DU";
 
   }
 
 }
+
+
+// ========================================
+// WORKSPACE EVENT
+// ========================================
+
+window.addEventListener(
+  "deskOSWorkspaceChanged",
+  function() {
+
+    console.log(
+      "DeskOS workspace changed"
+    );
+
+
+    /*
+     * Refresh the current page when the
+     * workspace changes.
+     */
+
+    renderHubContent();
+
+  }
+);
 
 
 // ========================================
@@ -606,21 +941,17 @@ function initialiseHub() {
 
   startClock();
 
-  updateProfileDisplay();
-
-  setupNavigation();
-
-  setupNewButton();
-
   setupSearchShortcut();
 
   setupHelpShortcut();
 
-  loadHubContent();
+  setupProfileFallback();
+
+  renderHubContent();
 
 
   console.log(
-    "DeskOS Hub initialised"
+    "DeskOS Hub loaded successfully."
   );
 
 }
@@ -648,22 +979,26 @@ if (
 
 
 // ========================================
-// PUBLIC HUB API
+// PUBLIC DESKOS HUB API
 // ========================================
 
 window.DeskOSHub = {
 
-  getView:
-    getCurrentView,
+  getView: function() {
+    return getCurrentView();
+  },
 
-  navigate:
-    navigateTo,
+  navigate: function(view) {
+    navigateToView(view);
+  },
 
-  reload:
-    loadHubContent,
+  reload: function() {
+    renderHubContent();
+  },
 
-  toast:
-    showToast
+  toast: function(message) {
+    showToast(message);
+  }
 
 };
 ```
