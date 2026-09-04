@@ -144,531 +144,576 @@
     }
   };
 
-  // =========================================================
-  // TASKS
-  // APPLE REMINDERS STYLE
-  // =========================================================
-
-  let selectedTaskId =
-    sessionStorage.getItem("deskos-selected-task") || "";
-
-  let taskFilter = "all";
-
-  const getFilteredTasks = () => {
-    const tasks = [...(state.state.tasks || [])];
-
-    const today = todayISO();
-
-    if (taskFilter === "today") {
-      return tasks.filter(task => task.date === today);
-    }
-
-    if (taskFilter === "upcoming") {
-      return tasks.filter(
-        task =>
-          task.date &&
-          task.date >= today &&
-          !task.complete
-      );
-    }
-
-    if (taskFilter === "completed") {
-      return tasks.filter(task => task.complete);
-    }
-
-    return tasks;
-  };
-
-  const renderTaskDetail = task => {
-    if (!task) {
-      return `
-        <div class="task-detail-empty">
-          <div class="task-detail-empty-icon">✓</div>
-
-          <h2>Select a task</h2>
-
-          <p>
-            Choose a task from the list to view its details.
-          </p>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="task-detail">
-
-        <div class="task-detail-top">
-
-          <div class="task-detail-check">
-            <label>
-              <input
-                type="checkbox"
-                data-detail-task-toggle="${escapeHTML(task.id)}"
-                ${task.complete ? "checked" : ""}
-              >
-
-              <span></span>
-            </label>
-          </div>
-
-          <button
-            type="button"
-            class="task-detail-delete"
-            data-detail-task-delete="${escapeHTML(task.id)}"
-          >
-            Delete
-          </button>
-
-        </div>
-
-        <input
-          type="text"
-          class="task-detail-title"
-          id="taskDetailTitle"
-          value="${escapeHTML(task.title || "")}"
-          placeholder="Task name"
-        >
-
-        <div class="task-detail-meta">
-
-          <div class="task-detail-meta-row">
-            <span class="task-meta-icon">◷</span>
-
-            <div>
-              <small>Due</small>
-              <strong>
-                ${
-                  task.date
-                    ? escapeHTML(formatDate(task.date))
-                    : "No due date"
-                }
-              </strong>
-            </div>
-          </div>
-
-          <div class="task-detail-meta-row">
-            <span class="task-meta-icon">✓</span>
-
-            <div>
-              <small>Status</small>
-              <strong>
-                ${
-                  task.complete
-                    ? "Completed"
-                    : "Not completed"
-                }
-              </strong>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="task-detail-section">
-
-          <p class="task-detail-label">
-            NOTES
-          </p>
-
-          <textarea
-            id="taskDetailNotes"
-            class="task-detail-notes"
-            placeholder="Add notes..."
-          >${escapeHTML(task.description || task.notes || "")}</textarea>
-
-        </div>
-
-        <div class="task-detail-actions">
-
-          <button
-            type="button"
-            class="primary-button"
-            id="saveTaskDetail"
-            data-save-task="${escapeHTML(task.id)}"
-          >
-            Save task
-          </button>
-
-        </div>
-
-      </div>
-    `;
-  };
-
-  const renderTasks = () => {
-    const tasks = [...(state.state.tasks || [])];
-
-    if (
-      !selectedTaskId ||
-      !tasks.some(task => task.id === selectedTaskId)
-    ) {
-      selectedTaskId = tasks[0]?.id || "";
-    }
-
-    const selectedTask =
-      tasks.find(task => task.id === selectedTaskId) ||
-      null;
-
-    const filteredTasks = getFilteredTasks();
-
-    const incomplete =
-      tasks.filter(task => !task.complete);
-
-    const completed =
-      tasks.filter(task => task.complete);
-
-    const today =
-      tasks.filter(task => task.date === todayISO());
-
-    return `
-      <section class="page-section tasks-page">
-
-        <div class="page-heading">
-
-          <div>
-            <p class="eyebrow">PRODUCTIVITY</p>
-
-            <h1>Tasks</h1>
-
-            <p class="page-description">
-              Keep track of everything you need to get done.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="primary-button"
-            id="addTaskButton"
-          >
-            + New task
-          </button>
-
-        </div>
-
-        <div class="tasks-app">
-
-          <aside class="tasks-list-panel">
-
-            <div class="tasks-panel-header">
-
-              <div>
-                <h2>Tasks</h2>
-                <span>${incomplete.length} remaining</span>
-              </div>
-
-              <button
-                type="button"
-                class="tasks-add-small"
-                id="addTaskSmall"
-              >
-                +
-              </button>
-
-            </div>
-
-            <div class="task-filters">
-
-              <button
-                type="button"
-                class="task-filter ${
-                  taskFilter === "all" ? "active" : ""
-                }"
-                data-task-filter="all"
-              >
-                <span class="filter-icon">☰</span>
-                <span>All</span>
-                <b>${tasks.length}</b>
-              </button>
-
-              <button
-                type="button"
-                class="task-filter ${
-                  taskFilter === "today" ? "active" : ""
-                }"
-                data-task-filter="today"
-              >
-                <span class="filter-icon">◷</span>
-                <span>Today</span>
-                <b>${today.length}</b>
-              </button>
-
-              <button
-                type="button"
-                class="task-filter ${
-                  taskFilter === "upcoming" ? "active" : ""
-                }"
-                data-task-filter="upcoming"
-              >
-                <span class="filter-icon">→</span>
-                <span>Upcoming</span>
-              </button>
-
-              <button
-                type="button"
-                class="task-filter ${
-                  taskFilter === "completed" ? "active" : ""
-                }"
-                data-task-filter="completed"
-              >
-                <span class="filter-icon">✓</span>
-                <span>Completed</span>
-                <b>${completed.length}</b>
-              </button>
-
-            </div>
-
-            <div class="task-list">
-
-              ${
-                filteredTasks.length
-                  ? filteredTasks
-                      .map(task => `
-                        <button
-                          type="button"
-                          class="task-list-item ${
-                            task.id === selectedTask?.id
-                              ? "selected"
-                              : ""
-                          } ${
-                            task.complete
-                              ? "completed"
-                              : ""
-                          }"
-                          data-task-select="${escapeHTML(task.id)}"
-                        >
-
-                          <span class="task-list-check">
-                            ${
-                              task.complete
-                                ? "✓"
-                                : ""
-                            }
-                          </span>
-
-                          <span class="task-list-content">
-
-                            <strong>
-                              ${escapeHTML(
-                                task.title ||
-                                "Untitled task"
-                              )}
-                            </strong>
-
-                            <small>
-                              ${
-                                task.date
-                                  ? escapeHTML(
-                                      formatDate(
-                                        task.date
-                                      )
-                                    )
-                                  : escapeHTML(
-                                      task.due ||
-                                      "No due date"
-                                    )
-                              }
-                            </small>
-
-                          </span>
-
-                        </button>
-                      `)
-                      .join("")
-                  : `
-                    <div class="task-list-empty">
-                      <div>✓</div>
-                      <strong>No tasks</strong>
-                      <span>
-                        You're all caught up.
-                      </span>
-                    </div>
-                  `
-              }
-
-            </div>
-
-          </aside>
-
-          <main class="task-detail-panel">
-            ${renderTaskDetail(selectedTask)}
-          </main>
-
-        </div>
-
-      </section>
-    `;
-  };
-
-  const createTask = () => {
-    const title =
-      window.prompt(
-        "Task name",
-        "New task"
-      );
-
-    if (!title?.trim()) return;
-
-    const due =
-      window.prompt(
-        "Due time or label",
-        "Today"
-      ) || "Today";
-
-    const task =
-      state.addTask(
-        title.trim(),
-        due.trim()
-      );
-
-    if (task) {
-      selectedTaskId = task.id;
-
-      sessionStorage.setItem(
-        "deskos-selected-task",
-        task.id
-      );
-    }
-
-    toast("Task created");
-
-    renderCurrentView();
-  };
-
-  const attachTaskEvents = () => {
-    $("#addTaskButton")?.addEventListener(
-      "click",
-      createTask
-    );
-
-    $("#addTaskSmall")?.addEventListener(
-      "click",
-      createTask
-    );
-
-    $$("[data-task-filter]").forEach(button => {
-      button.addEventListener(
-        "click",
-        () => {
-          taskFilter =
-            button.dataset.taskFilter;
-
-          renderCurrentView();
-        }
-      );
-    });
-
-    $$("[data-task-select]").forEach(button => {
-      button.addEventListener(
-        "click",
-        () => {
-          selectedTaskId =
-            button.dataset.taskSelect;
-
-          sessionStorage.setItem(
-            "deskos-selected-task",
-            selectedTaskId
-          );
-
-          renderCurrentView();
-        }
-      );
-    });
-
-    $$("[data-detail-task-toggle]").forEach(
-      input => {
-        input.addEventListener(
-          "change",
-          () => {
-            const id =
-              input.dataset.detailTaskToggle;
-
-            const task =
-              (state.state.tasks || []).find(
-                item => item.id === id
-              );
-
-            if (!task) return;
-
-            state.updateTask(id, {
-              complete: !task.complete
-            });
-
-            toast(
-              task.complete
-                ? "Task reopened"
-                : "Task completed"
-            );
-
-            renderCurrentView();
-          }
-        );
-      }
-    );
-
-    $$("[data-detail-task-delete]").forEach(
-      button => {
-        button.addEventListener(
-          "click",
-          () => {
-            const id =
-              button.dataset.detailTaskDelete;
-
-            const task =
-              (state.state.tasks || []).find(
-                item => item.id === id
-              );
-
-            if (!task) return;
-
-            if (
-              !window.confirm(
-                `Delete "${task.title}"?`
-              )
-            ) {
-              return;
-            }
-
-            state.deleteTask(id);
-
-            selectedTaskId = "";
-
-            sessionStorage.removeItem(
-              "deskos-selected-task"
-            );
-
-            toast("Task deleted");
-
-            renderCurrentView();
-          }
-        );
-      }
-    );
-
-    $("#saveTaskDetail")?.addEventListener(
-      "click",
-      () => {
-        const id =
-          $("#saveTaskDetail").dataset.saveTask;
-
-        const title =
-          $("#taskDetailTitle")?.value.trim() ||
-          "Untitled task";
-
-        const notes =
-          $("#taskDetailNotes")?.value || "";
-
-        state.updateTask(id, {
-          title,
-          description: notes,
-          notes
-        });
-
-        toast("Task saved");
-
-        renderCurrentView();
-      }
-    );
-  };
-
+/* =========================================================
+   TASKS
+   APPLE REMINDERS STYLE
+   ========================================================= */
+
+.tasks-page {
+  padding-bottom: 40px;
+}
+
+/* ---------------------------------------------------------
+   TASK APP
+--------------------------------------------------------- */
+
+.tasks-app {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  min-height: 620px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 0 rgba(36, 40, 33, 0.008);
+}
+
+/* ---------------------------------------------------------
+   LEFT TASK LIST
+--------------------------------------------------------- */
+
+.tasks-list-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #f8f8f5;
+  border-right: 1px solid var(--line);
+}
+
+/* Header */
+
+.tasks-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 20px 17px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tasks-panel-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.tasks-panel-header span {
+  display: block;
+  margin-top: 4px;
+  color: #979b93;
+  font-size: 10px;
+}
+
+/* Small + button */
+
+.tasks-add-small {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: white;
+  color: #5f665b;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  transition: 0.18s ease;
+}
+
+.tasks-add-small:hover {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #263019;
+  transform: scale(1.04);
+}
+
+/* ---------------------------------------------------------
+   FILTERS
+--------------------------------------------------------- */
+
+.task-filters {
+  display: grid;
+  gap: 3px;
+  padding: 13px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-filter {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #73786f;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 650;
+  transition: 0.18s ease;
+}
+
+.task-filter:hover {
+  background: #eeeeea;
+  color: var(--ink);
+}
+
+.task-filter.active {
+  background: #e9eadf;
+  color: #20241f;
+  font-weight: 800;
+}
+
+.task-filter .filter-icon {
+  width: 18px;
+  color: #92988e;
+  font-size: 15px;
+  text-align: center;
+}
+
+.task-filter.active .filter-icon {
+  color: #68752e;
+}
+
+.task-filter b {
+  margin-left: auto;
+  min-width: 20px;
+  color: #999d96;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------
+   TASK LIST
+--------------------------------------------------------- */
+
+.task-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.task-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+  background: #d7d8d1;
+  border-radius: 20px;
+}
+
+.task-list-item {
+  position: relative;
+  width: 100%;
+  min-height: 65px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  transition: 0.18s ease;
+}
+
+.task-list-item:hover {
+  background: #eeeeea;
+}
+
+.task-list-item.selected {
+  background: white;
+  box-shadow:
+    0 1px 2px rgba(30, 35, 28, 0.04),
+    0 0 0 1px #e3e4dc;
+}
+
+.task-list-item.completed {
+  opacity: 0.62;
+}
+
+/* Checkbox */
+
+.task-list-check {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #9da29a;
+  border-radius: 50%;
+  background: white;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  transition: 0.18s ease;
+}
+
+.task-list-item.completed .task-list-check {
+  border-color: #b4cb3d;
+  background: #b4cb3d;
+  color: #263019;
+}
+
+.task-list-item.selected .task-list-check {
+  border-color: #8f9d43;
+}
+
+/* Task text */
+
+.task-list-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-list-content strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #30342e;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-list-item.completed .task-list-content strong {
+  color: #969a92;
+  text-decoration: line-through;
+}
+
+.task-list-content small {
+  color: #a0a49c;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+/* ---------------------------------------------------------
+   EMPTY TASK LIST
+--------------------------------------------------------- */
+
+.task-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 30px 20px;
+  color: #9b9f97;
+  text-align: center;
+}
+
+.task-list-empty > div {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+  border: 1px solid #dfe0d9;
+  border-radius: 50%;
+  background: white;
+  color: #aab19b;
+  font-size: 18px;
+}
+
+.task-list-empty strong {
+  color: #60665d;
+  font-size: 12px;
+}
+
+.task-list-empty span {
+  margin-top: 5px;
+  font-size: 9px;
+}
+
+/* ---------------------------------------------------------
+   RIGHT DETAIL PANEL
+--------------------------------------------------------- */
+
+.task-detail-panel {
+  min-width: 0;
+  background: #ffffff;
+}
+
+/* Empty detail */
+
+.task-detail-empty {
+  height: 100%;
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.task-detail-empty-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border: 1px solid #e0e2da;
+  border-radius: 50%;
+  background: #f7f8f2;
+  color: #9ca57b;
+  font-size: 22px;
+}
+
+.task-detail-empty h2 {
+  margin: 0;
+  color: #444940;
+  font-size: 16px;
+  letter-spacing: -0.4px;
+}
+
+.task-detail-empty p {
+  max-width: 300px;
+  margin: 8px 0 0;
+  color: #9a9e96;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------
+   DETAIL
+--------------------------------------------------------- */
+
+.task-detail {
+  min-height: 620px;
+  padding: 28px 34px 34px;
+}
+
+/* Top row */
+
+.task-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.task-detail-check label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.task-detail-check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.task-detail-check label > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #a4a9a0;
+  border-radius: 50%;
+  background: white;
+  transition: 0.18s ease;
+}
+
+.task-detail-check input:checked + span {
+  border-color: var(--lime-deep);
+  background: var(--lime);
+}
+
+.task-detail-check input:checked + span::after {
+  content: "✓";
+  color: #263019;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Delete */
+
+.task-detail-delete {
+  padding: 6px 9px;
+  border-radius: 6px;
+  color: #c17b73;
+  font-size: 10px;
+  font-weight: 700;
+  transition: 0.18s ease;
+}
+
+.task-detail-delete:hover {
+  background: #f9e9e7;
+  color: #a85249;
+}
+
+/* ---------------------------------------------------------
+   TASK TITLE
+--------------------------------------------------------- */
+
+.task-detail-title {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #20241f;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.2;
+}
+
+.task-detail-title::placeholder {
+  color: #b6bab2;
+}
+
+.task-detail-title:focus {
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------
+   META
+--------------------------------------------------------- */
+
+.task-detail-meta {
+  display: grid;
+  gap: 0;
+  margin-top: 27px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.task-detail-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 62px;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-detail-meta-row:last-child {
+  border-bottom: 0;
+}
+
+.task-meta-icon {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f2f3ed;
+  color: #7f8964;
+  font-size: 14px;
+}
+
+.task-detail-meta-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.task-detail-meta-row small {
+  color: #9a9e96;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.task-detail-meta-row strong {
+  color: #41463f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------
+   NOTES
+--------------------------------------------------------- */
+
+.task-detail-section {
+  margin-top: 28px;
+}
+
+.task-detail-label {
+  margin: 0 0 10px;
+  color: #9a9e96;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.task-detail-notes {
+  width: 100%;
+  min-height: 170px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  background: #fafaf7;
+  color: #4c5149;
+  font-size: 11px;
+  line-height: 1.7;
+  transition: 0.18s ease;
+}
+
+.task-detail-notes::placeholder {
+  color: #b2b6ae;
+}
+
+.task-detail-notes:focus {
+  border-color: #cbd39f;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(216, 242, 88, 0.12);
+}
+
+/* ---------------------------------------------------------
+   SAVE
+--------------------------------------------------------- */
+
+.task-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.task-detail-actions .primary-button {
+  min-width: 105px;
+}
+
+/* ---------------------------------------------------------
+   COMPLETED TEXT
+--------------------------------------------------------- */
+
+.completed-text {
+  color: #a1a59d;
+  text-decoration: line-through;
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+--------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+  .tasks-app {
+    grid-template-columns: 285px minmax(0, 1fr);
+  }
+
+  .task-detail {
+    padding: 24px;
+  }
+
+  .task-detail-title {
+    font-size: 24px;
+  }
+}
 // =========================================================
 // CALENDAR
 // APPLE CALENDAR STYLE
